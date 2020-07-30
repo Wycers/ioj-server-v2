@@ -1,0 +1,674 @@
+openapi: 3.0.2
+info:
+  contact: {}
+  description: Brand new story
+  license:
+    name: AGPL-v3
+  title: Infinity OJ API
+  version: "1.0"
+servers:
+  - url: 'https://api.server.test/v1'
+  - url: 'http://127.0.0.1:8888/api/v1'
+tags:
+  - name: Account
+    description: Accounts related operations
+  - name: Session
+    description: Current session related operations
+  - name: Problem
+    description: Problems related operations
+  - name: Submission
+    description: Submissions related operations
+  - name: Judgement
+    description: Judgements related operations
+  - name: Agent
+    description: Agent related operations
+  - name: Task
+    description: Task related operations
+paths:
+  /account/application:
+    post:
+      tags:
+        - Account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountApplication"
+        description: Account
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountApplication"
+      summary: Create Account
+  "/account/{id}":
+    delete:
+      tags:
+        - Account
+      parameters:
+        - description: ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: no content
+      security:
+        - cookieAuth: []
+      summary: Delete Account
+    get:
+      tags:
+        - Account
+      parameters:
+        - description: ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+      security:
+        - cookieAuth: []
+      summary: Get a single account
+    put:
+      tags:
+        - Account
+      parameters:
+        - description: ID
+          in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Account"
+        description: account
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+      security:
+        - cookieAuth: []
+      summary: Update Account
+  "/problem/{problemId}":
+    get:
+      description: The problem detail
+      tags:
+        - Problem
+      parameters:
+        - description: id
+          in: path
+          name: problemId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The problem detail
+    put:
+      tags:
+        - Problem
+      parameters:
+        - description: id
+          in: path
+          name: problemId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: The problem updated
+      description: update a problem
+  /problem/:
+    get:
+      tags:
+        - Problem
+      parameters:
+          - name: from
+            in: query
+            schema:
+              type: string
+              format: date-time
+          - name: to
+            in: query
+            schema:
+              type: string
+              format: date-time
+          - name: type
+            in: query
+            schema:
+              type: string
+          - $ref: '#/components/parameters/Pagination.page'
+          - $ref: '#/components/parameters/Pagination.pageSize'
+          - $ref: '#/components/parameters/Pagination.sort'
+      responses:
+        "200":
+          description: problem list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/AbstractPage'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Problem'
+    post:
+      tags:
+        - Problem
+      responses:
+        "200":
+          description: The problem created
+      description: create a problem
+  "/submission/{submissionId}":
+    get:
+      description: The submission detail
+      tags:
+        - Submission
+      responses:
+        "200":
+          description: The submission detail
+  /submission/:
+    get:
+      tags:
+        - Submission
+      summary: Get a submission list
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: type
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Pagination.page'
+        - $ref: '#/components/parameters/Pagination.pageSize'
+        - $ref: '#/components/parameters/Pagination.sort'
+      responses:
+        "200":
+          description: Submission list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/AbstractPage'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Submission'
+    post:
+      tags:
+        - Submission
+      responses:
+        "200":
+          description: The submission created
+      description: create a submission
+      summary: Create a submission
+  "/judgement/{judgementId}":
+    get:
+      description: The judgement detail
+      tags:
+        - Judgement
+      responses:
+        "200":
+          description: The judgement detail
+  /judgement/:
+    get:
+      tags:
+        - Judgement
+      summary: Get a judgement list
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: type
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Pagination.page'
+        - $ref: '#/components/parameters/Pagination.pageSize'
+        - $ref: '#/components/parameters/Pagination.sort'
+      responses:
+        "200":
+          description: Judgement list
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/AbstractPage'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Judgement'
+    post:
+      tags:
+        - Judgement
+      responses:
+        "200":
+          description: The judgement created
+      description: create a judgement
+      summary: Create a judgement
+  /session/principal:
+    delete:
+      tags:
+        - Session
+      responses:
+        "204":
+          description: no content
+        "401":
+          description: Unauthorized
+      security:
+        - cookieAuth: []
+      summary: Delete principal (log out)
+      description: Delete vistor's principal of this session.
+    post:
+      tags:
+        - Session
+      requestBody:
+        $ref: "#/components/requestBodies/Principal"
+      responses:
+        "200":
+          description: Create a principal for current session (login)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Principal"
+    get:
+      tags:
+        - Session
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Response"
+        "401":
+          description: Unauthorized
+      security:
+        - cookieAuth: []
+      summary: Get principal (validation)
+    # post:
+    #   requestBody:
+    #     content:
+    #       application/json:
+    #         schema:
+    #           $ref: "#/components/schemas/Credential"
+    #     description: credential
+    #     required: true
+    #   responses:
+    #     "200":
+    #       description: >
+    #         Successfully authenticated.
+    #         The session ID is returned in a cookie named `JSESSIONID`. You need to include this cookie in subsequent requests.
+    #       headers:
+    #         Set-Cookie:
+    #           schema:
+    #             type: string
+    #             example: JSESSIONID=abcde12345; Path=/; HttpOnly
+    #     "401":
+    #       description: Unauthorized
+    #       content:
+    #         application/json:
+    #           schema:
+    #             $ref: "#/components/schemas/Response"
+    #   summary: Create Session (Log in)
+
+  "/agent/{agentId}":
+    get:
+      tags:
+        - Agent
+      parameters:
+        - description: id
+          in: path
+          name: agentId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+      security:
+        - cookieAuth: []
+      summary: Get an agent
+    put:
+      tags:
+        - Agent
+      parameters:
+        - description: id
+          in: path
+          name: agentId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+      security:
+        - cookieAuth: []
+      summary: Update an agent
+  /agent:
+    get:
+      tags:
+        - Agent
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Agent"
+                type: array
+      security:
+        - cookieAuth: []
+      summary: Get an agent list
+    post:
+      tags:
+        - Agent
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentApplication"
+        description: Application for an agent
+        required: true
+      responses:
+        "201":
+          description: Created agent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentApplication"
+      summary: Create an agent
+  "/task/{taskId}":
+    get:
+      tags:
+        - Task
+      parameters:
+        - description: id
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+      security:
+        - cookieAuth: []
+      summary: Get a task
+    put:
+      tags:
+        - Task
+      parameters:
+        - description: id
+          in: path
+          name: taskId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+      security:
+        - cookieAuth: []
+      summary: Update a task
+  /task:
+    get:
+      tags:
+        - Task
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                items:
+                  $ref: "#/components/schemas/Task"
+                type: array
+      security:
+        - cookieAuth: []
+      summary: Get one random task
+#    put:
+#      requestBody:
+#        $ref: "#/components/requestBodies/Task"
+#      responses:
+#        "201":
+#          description: Created
+#          content:
+#            application/json:
+#              schema:
+#                $ref: "#/components/schemas/Task"
+#      security:
+#        - cookieAuth: []
+#      summary: Create a task
+components:
+  requestBodies:
+    Task:
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Task"
+      description: task
+      required: true
+    Principal:
+      $ref: "#/components/schemas/Principal"
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+    ApiKeyAuth:
+      in: header
+      name: Authorization
+      type: apiKey
+  schemas:
+    AbstractPage:
+      type: object
+      properties:
+        page:
+          type: number
+          description: 页码（当前页）
+        pageSize:
+          type: number
+          description: 每页条目数量
+        sort:
+          type: object
+          properties:
+            order:
+              type: array
+              items:
+                type: object
+                properties:
+                  property:
+                    type: string
+                    description: 所依据的属性名称
+                  direction:
+                    type: string
+                    description: 排序方向
+        total:
+          type: number
+          description: 除分页条件外的过滤结果记录总和
+        totalPage:
+          type: number
+          description: 总页数（ceil(total / pageSize)）
+        data:
+          type: array
+          items:
+            type: object
+          description: 抽象数据对象查询聚合
+    Response:
+      properties:
+        code:
+          type: integer
+        data:
+          type: object
+        msg:
+          type: string
+      type: object
+    AccountApplication:
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        password:
+          type: string
+      type: object
+    Account:
+      properties:
+        createdAt:
+          type: integer
+        deletedAt:
+          type: integer
+        email:
+          type: string
+        id:
+          type: integer
+        updatedAt:
+          type: integer
+        username:
+          type: string
+      type: object
+    Task:
+      properties:
+        createdAt:
+          type: integer
+        deletedAt:
+          type: integer
+        end_at:
+          type: string
+        id:
+          type: integer
+        remark:
+          type: string
+        start_at:
+          type: string
+        status:
+          type: string
+        taskId:
+          type: string
+        updatedAt:
+          type: integer
+        url:
+          type: string
+      type: object
+    Principal:
+      properties:
+        createdAt:
+          type: integer
+        deletedAt:
+          type: integer
+        account:
+          $ref: '#/components/schemas/Account'
+        credential:
+          $ref: '#/components/schemas/Credential'
+    Credential:
+      properties:
+        type:
+          type: string
+        value:
+          type: string
+      type: object
+    Problem:
+      properties:
+        problemId:
+          type: integer
+        title:
+          type: string
+    Submission:
+      properties:
+        submissionId:
+          type: integer
+        title:
+          type: string
+    Judgement:
+      properties:
+        submissionId:
+          type: integer
+        title:
+          type: string
+    Agent:
+    AgentApplication:
+  parameters:
+    Pagination.page:
+      in: query
+      name: page
+      schema:
+        type: number
+        description: 页码（当前页）
+    Pagination.pageSize:
+      in: query
+      name: pageSize
+      schema:
+        type: number
+        description: 每页条目数量
+    Pagination.sort:
+      in: query
+      name: sort
+      schema:
+        type: array
+        items:
+          type: object
+          properties:
+            property:
+              type: string
+              description: 所依据的属性名称
+            direction:
+              type: string
+              description: 排序方向
