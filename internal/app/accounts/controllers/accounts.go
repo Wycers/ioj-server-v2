@@ -113,8 +113,8 @@ func (d DefaultController) UpdateAccount(c *gin.Context) {
 	d.logger.Debug("update account", zap.String("account name", name))
 	account, err = d.service.UpdateAccount(
 		account,
-		request.Email,
 		request.Nickname,
+		request.Email,
 		request.Gender,
 		request.Locale,
 	)
