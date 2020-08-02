@@ -9,14 +9,15 @@ import (
 	"go.uber.org/zap"
 )
 
-var specialKey = "imf1nlTy0j"
+// You should never change it, otherwise all old credentials will turn invalid
+const specialKey = "imf1nlTy0j"
 
 type Service interface {
 	GetAccount(name string) (account *models.Account, err error)
 	UpdateAccount(account *models.Account, nickname, email, gender, locale string) (*models.Account, error)
 	CreateAccount(username, password, email string) (account *models.Account, err error)
 
-	Verify(username, password string) (valid bool, err error)
+	VerifyCredential(username, password string) (isValid bool, err error)
 }
 
 type DefaultService struct {
@@ -61,9 +62,11 @@ func (s *DefaultService) CreateAccount(username, password, email string) (accoun
 	return
 }
 
-func (s *DefaultService) Verify(username, password string) (valid bool, err error) {
+func (s *DefaultService) VerifyCredential(username, password string) (isValid bool, err error) {
+	s.logger.Debug("verify credential", zap.String("username", username))
 	u := new(models.Credential)
 	if u, err = s.Repository.QueryCredential(username); err != nil {
+		s.logger.Error("verify credential error", zap.Error(err))
 		return false, err
 	}
 	hash := crypto.Sha256(u.Salt + password + specialKey)
@@ -73,7 +76,7 @@ func (s *DefaultService) Verify(username, password string) (valid bool, err erro
 
 func New(logger *zap.Logger, Repository repositories.Repository) Service {
 	return &DefaultService{
-		logger:     logger.With(zap.String("type", "AccountRepository")),
+		logger:     logger.With(zap.String("type", "Account Repository")),
 		Repository: Repository,
 	}
 }

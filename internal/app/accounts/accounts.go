@@ -15,6 +15,11 @@ func CreateInitControllersFn(ac controllers.Controller) InitAccountGroupFn {
 		r.GET("/account/:name", ac.GetAccount)
 		r.PUT("/account/:name", ac.UpdateAccount)
 		r.POST("/account/application", ac.CreateAccount)
+
+
+		r.GET("/session/principal", ac.GetPrincipal)
+		r.POST("/session/principal", ac.CreatePrincipal)
+		r.DELETE("/session/principal", ac.DeletePrincipal)
 	}
 }
 

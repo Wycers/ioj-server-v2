@@ -18,7 +18,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 )
+
+const specialKey = "imf1nlTy0j"
 
 type Options struct {
 	Host string
@@ -62,6 +67,8 @@ func NewRouter(o *Options, logger *zap.Logger, init InitControllers, tracer open
 	r.Use(ginzap.RecoveryWithZap(logger, true))
 	r.Use(ginprom.New(r).Middleware()) // 添加 prometheus 监控
 	r.Use(ginhttp.Middleware(tracer))
+	store := cookie.NewStore([]byte(specialKey))
+	r.Use(sessions.Sessions("ioj-session", store))
 
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	pprof.Register(r)
