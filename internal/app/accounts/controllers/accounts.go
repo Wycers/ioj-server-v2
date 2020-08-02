@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/infinity-oj/server-v2/internal/app/accounts/services"
+	"github.com/infinity-oj/server-v2/internal/pkg/sessions"
 	"go.uber.org/zap"
 	"net/http"
 )
@@ -12,11 +13,22 @@ type Controller interface {
 	CreateAccount(c *gin.Context)
 	GetAccount(c *gin.Context)
 	UpdateAccount(c *gin.Context)
+
+	CreatePrincipal(c *gin.Context)
+	GetPrincipal(c *gin.Context)
+	DeletePrincipal(c *gin.Context)
 }
 
 type DefaultController struct {
 	logger  *zap.Logger
 	service services.Service
+}
+
+func New(logger *zap.Logger, s services.Service) Controller {
+	return &DefaultController{
+		logger:  logger,
+		service: s,
+	}
 }
 
 func (d DefaultController) CreateAccount(c *gin.Context) {
@@ -127,9 +139,76 @@ func (d DefaultController) UpdateAccount(c *gin.Context) {
 	c.JSON(http.StatusOK, account)
 }
 
-func New(logger *zap.Logger, s services.Service) Controller {
-	return &DefaultController{
-		logger:  logger,
-		service: s,
+func (d DefaultController) CreatePrincipal(c *gin.Context) {
+	session := sessions.GetSession(c)
+	if session != nil {
+		session.Clear(c)
 	}
+	request := struct {
+		Username string `json:"username" binding:"required"`
+		Password string `json:"password" binding:"required"`
+	}{}
+
+	if err := c.ShouldBind(&request); err != nil {
+		errs, ok := err.(validator.ValidationErrors)
+		if !ok {
+			c.JSON(http.StatusOK, gin.H{
+				"msg": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg": errs.Error(),
+		})
+		return
+	}
+
+	isValid, err := d.service.VerifyCredential(request.Username, request.Password)
+	if err != nil {
+		d.logger.Error("verify credential", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	if !isValid {
+		d.logger.Debug("verify credential", zap.String("username", request.Username))
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	account, err := d.service.GetAccount(request.Username)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	session = sessions.New()
+	session.AccountId = account.ID
+	err = session.Save(c)
+	if err != nil {
+		d.logger.Error("verify credential, save session", zap.String("username", request.Username))
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func (d DefaultController) GetPrincipal(c *gin.Context) {
+	session := sessions.GetSession(c)
+	if session == nil {
+		d.logger.Debug("get principal failed")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (d DefaultController) DeletePrincipal(c *gin.Context) {
+	session := sessions.GetSession(c)
+	if session != nil {
+		session.Clear(c)
+	}
+	c.Status(http.StatusNoContent)
 }
