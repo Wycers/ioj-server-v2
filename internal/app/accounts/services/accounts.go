@@ -69,6 +69,9 @@ func (s *DefaultService) VerifyCredential(username, password string) (isValid bo
 		s.logger.Error("verify credential error", zap.Error(err))
 		return false, err
 	}
+	if u == nil {
+		return false, nil
+	}
 	hash := crypto.Sha256(u.Salt + password + specialKey)
 
 	return hash == u.Hash, nil
