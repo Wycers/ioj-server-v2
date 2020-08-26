@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"sync"
 
 	"github.com/infinity-oj/server-v2/internal/pkg/crypto"
@@ -43,7 +44,13 @@ func (se ProcessRuntime) SetOutputs(blockId int, outputs [][]byte) error {
 	block := se.graph.FindBlockById(blockId)
 
 	if len(block.Output) != len(outputs) {
-		return errors.New("output slots mismatch")
+
+		msg := fmt.Sprintf("output slots mismatch, block %d expects %d but %d",
+			blockId,
+			len(block.Output),
+			len(outputs),
+		)
+		return errors.New(msg)
 	}
 
 	for index, output := range outputs {
