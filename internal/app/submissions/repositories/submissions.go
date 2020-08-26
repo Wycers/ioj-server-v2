@@ -4,8 +4,6 @@ import (
 	"container/list"
 	"sync"
 
-	"github.com/infinity-oj/server-v2/internal/pkg/nodeEngine"
-
 	"github.com/google/uuid"
 
 	"github.com/infinity-oj/server-v2/internal/pkg/models"
@@ -16,12 +14,10 @@ import (
 
 type Repository interface {
 	GetSubmission(submissionId string) (*models.Submission, error)
+	GetSubmissionById(id uint64) (*models.Submission, error)
 	GetSubmissions(offset, limit int, problemId string) ([]*models.Submission, error)
 	Create(submitterID, problemId uint64, userSpace string) (s *models.Submission, err error)
 	Update(s *models.Submission) error
-
-	CreateProcess(s *models.Submission) *Process
-	FetchProcess(processId string) *Process
 }
 
 type DefaultRepository struct {
@@ -31,6 +27,18 @@ type DefaultRepository struct {
 	mutex  *sync.Mutex
 }
 
+func (m DefaultRepository) GetSubmissionById(id uint64) (*models.Submission, error) {
+	submission := &models.Submission{}
+	err := m.db.First(&submission, id).Error
+	if gorm.IsRecordNotFoundError(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return submission, nil
+}
+
 func (m DefaultRepository) GetSubmissions(offset, limit int, problemId string) (res []*models.Submission, err error) {
 	if err = m.db.Table("submissions").Where("problem_id = ?", problemId).
 		Offset(offset).Limit(limit).
@@ -38,101 +46,6 @@ func (m DefaultRepository) GetSubmissions(offset, limit int, problemId string) (
 		return nil, err
 	}
 	return
-}
-
-type Process struct {
-	ProcessId string
-
-	obj    *models.Submission
-	graph  *nodeEngine.Graph
-	result map[int][]byte
-}
-
-type JudgementElement struct {
-	Id         int
-	Type       string
-	Properties map[string]string
-	Inputs     [][]byte
-}
-
-func (se Process) FindUpstreams() (res []*JudgementElement) {
-
-	ids := se.graph.Run()
-
-	for _, block := range ids {
-		var inputs [][]byte
-		for _, linkId := range block.Inputs {
-			if data, ok := se.result[linkId]; ok {
-				inputs = append(inputs, data)
-			} else {
-				panic("something wrong")
-			}
-		}
-
-		res = append(res, &JudgementElement{
-			Id:         block.Id,
-			Type:       block.Type,
-			Properties: block.Properties,
-			Inputs:     inputs,
-		})
-	}
-
-	return
-}
-
-func (se Process) SetOutputs(blockId int, outputs [][]byte) error {
-
-	block := se.graph.FindBlockById(blockId)
-
-	if len(block.Output) != len(outputs) {
-		return errors.New("output slots mismatch")
-	}
-
-	for index, output := range outputs {
-		links := se.graph.FindLinkBySourcePort(blockId, index)
-		for _, link := range links {
-			se.result[link.Id] = output
-		}
-	}
-
-	block.Done()
-	return nil
-}
-
-func (m DefaultRepository) CreateProcess(s *models.Submission) *Process {
-
-	graph := nodeEngine.NewGraphByFile("easyGraph.json")
-
-	result := make(map[int][]byte)
-
-	element := &Process{
-		ProcessId: uuid.New().String(),
-		obj:       s,
-		graph:     graph,
-		result:    result,
-	}
-
-	m.queue.PushBack(element)
-
-	return element
-}
-
-func (m DefaultRepository) FetchProcess(processId string) *Process {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-
-	for se := m.queue.Front(); se != nil; se = se.Next() {
-		element, ok := se.Value.(*Process)
-		if !ok {
-			continue
-		}
-
-		if element.ProcessId == processId {
-			return element
-		}
-	}
-
-	return nil
 }
 
 func (m DefaultRepository) GetSubmission(submissionId string) (*models.Submission, error) {
@@ -160,21 +73,6 @@ func (m DefaultRepository) Create(submitterId, problemId uint64, userSpace strin
 			" create submission with username: %d, problemID: %s, userSpace: %s",
 			submitterId, problemId, userSpace,
 		)
-	}
-
-	return
-}
-
-func (m DefaultRepository) GetUpstreams() (res []*JudgementElement) {
-
-	for se := m.queue.Front(); se != nil; se = se.Next() {
-		judgement, ok := se.Value.(*Process)
-
-		if !ok {
-			continue
-		}
-
-		res = append(res, judgement.FindUpstreams()...)
 	}
 
 	return
