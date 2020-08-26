@@ -68,6 +68,7 @@ func NewGraphByDefinition(definition string) (*Graph, error) {
 			if mp, ok := output.(map[string]interface{}); ok {
 				if links, ok := mp["links"]; ok {
 					if links == nil {
+						outputs = append(outputs, []int{0})
 						continue
 					}
 					var tmp []int
