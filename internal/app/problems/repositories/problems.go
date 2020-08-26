@@ -25,6 +25,7 @@ type DefaultRepository struct {
 }
 
 func (m DefaultRepository) GetProblemById(id uint64) (p *models.Problem, err error) {
+	p = &models.Problem{}
 	if err = m.db.First(p, id).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil
