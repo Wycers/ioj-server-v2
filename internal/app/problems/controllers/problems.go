@@ -1,9 +1,10 @@
 package controllers
 
 import (
+	"net/http"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/infinity-oj/server-v2/internal/pkg/sessions"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/infinity-oj/server-v2/internal/app/problems/services"
@@ -84,7 +85,10 @@ func (pc *DefaultController) GetProblems(c *gin.Context) {
 		return
 	}
 
-	pc.logger.Debug("get problems", zap.Int("page", request.Page), zap.Int("pageSize", request.PageSize))
+	pc.logger.Debug("get problems",
+		zap.Int("page", request.Page),
+		zap.Int("pageSize", request.PageSize),
+	)
 
 	problem, err := pc.service.GetProblems(request.Page, request.PageSize)
 	if err != nil {
