@@ -8,8 +8,9 @@ import (
 )
 
 type Repository interface {
+	GetAccountByName(name string) (account *models.Account, err error)
+	GetAccountById(id uint64) (account *models.Account, err error)
 	CreateAccount(name, hash, salt, email string) (u *models.Account, err error)
-	QueryAccount(name string) (p *models.Account, err error)
 	UpdateAccount(p *models.Account) (err error)
 
 	UpdateCredential(u *models.Credential) (err error)
@@ -89,13 +90,26 @@ func (s *DefaultRepository) QueryCredential(username string) (credential *models
 	return
 }
 
-func (s *DefaultRepository) QueryAccount(name string) (account *models.Account, err error) {
+func (s *DefaultRepository) GetAccountByName(name string) (account *models.Account, err error) {
 	account = &models.Account{}
 	if err = s.db.Where(&models.Account{Name: name}).First(account).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil
 		} else {
 			s.logger.Error("query account failed", zap.String("name", name), zap.Error(err))
+		}
+		return nil, err
+	}
+	return
+}
+
+func (s *DefaultRepository) GetAccountById(id uint64) (account *models.Account, err error) {
+	account = &models.Account{}
+	if err = s.db.First(account, id).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, nil
+		} else {
+			s.logger.Error("query account failed", zap.Uint64("id", id), zap.Error(err))
 		}
 		return nil, err
 	}

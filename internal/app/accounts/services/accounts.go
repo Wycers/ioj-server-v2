@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+
 	"github.com/infinity-oj/server-v2/internal/app/accounts/repositories"
 	"github.com/infinity-oj/server-v2/internal/pkg/crypto"
 	"github.com/infinity-oj/server-v2/internal/pkg/models"
@@ -14,6 +15,7 @@ const specialKey = "imf1nlTy0j"
 
 type Service interface {
 	GetAccount(name string) (account *models.Account, err error)
+	GetAccountById(id uint64) (account *models.Account, err error)
 	UpdateAccount(account *models.Account, nickname, email, gender, locale string) (*models.Account, error)
 	CreateAccount(username, password, email string) (account *models.Account, err error)
 
@@ -26,9 +28,15 @@ type DefaultService struct {
 }
 
 func (s *DefaultService) GetAccount(name string) (account *models.Account, err error) {
-	account, err = s.Repository.QueryAccount(name)
+	account, err = s.Repository.GetAccountByName(name)
 	return
 }
+
+func (s *DefaultService) GetAccountById(id uint64) (account *models.Account, err error) {
+	account, err = s.Repository.GetAccountById(id)
+	return
+}
+
 func (s *DefaultService) UpdateAccount(account *models.Account, nickname, email, gender, locale string) (*models.Account, error) {
 	s.logger.Debug("update account", zap.String("name", account.Name))
 	account.Nickname = nickname
@@ -76,7 +84,6 @@ func (s *DefaultService) VerifyCredential(username, password string) (isValid bo
 
 	return hash == u.Hash, nil
 }
-
 func New(logger *zap.Logger, Repository repositories.Repository) Service {
 	return &DefaultService{
 		logger:     logger.With(zap.String("type", "Account Repository")),

@@ -1,12 +1,13 @@
 package controllers
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/infinity-oj/server-v2/internal/app/accounts/services"
 	"github.com/infinity-oj/server-v2/internal/pkg/sessions"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 type Controller interface {
@@ -202,7 +203,19 @@ func (d DefaultController) GetPrincipal(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-	c.Status(http.StatusNoContent)
+
+	account, err := d.service.GetAccountById(session.AccountId)
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	if account == nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, account)
 }
 
 func (d DefaultController) DeletePrincipal(c *gin.Context) {
@@ -211,4 +224,8 @@ func (d DefaultController) DeletePrincipal(c *gin.Context) {
 		session.Clear(c)
 	}
 	c.Status(http.StatusNoContent)
+}
+
+func (d DefaultController) DeleteAccount(c *gin.Context) {
+	c.AbortWithStatus(http.StatusNotImplemented)
 }
