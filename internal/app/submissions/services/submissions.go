@@ -7,7 +7,7 @@ import (
 
 	problemRepository "github.com/infinity-oj/server-v2/internal/app/problems/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/submissions/repositories"
-	"github.com/infinity-oj/server-v2/internal/pkg/models"
+	"github.com/infinity-oj/server-v2/pkg/models"
 )
 
 type SubmissionsService interface {

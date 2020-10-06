@@ -5,8 +5,8 @@ import (
 
 	"github.com/infinity-oj/server-v2/internal/app/accounts/repositories"
 	"github.com/infinity-oj/server-v2/internal/pkg/crypto"
-	"github.com/infinity-oj/server-v2/internal/pkg/models"
 	"github.com/infinity-oj/server-v2/internal/pkg/utils/random"
+	"github.com/infinity-oj/server-v2/pkg/models"
 	"go.uber.org/zap"
 )
 

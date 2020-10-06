@@ -1,7 +1,7 @@
 package repositories
 
 import (
-	"github.com/infinity-oj/server-v2/internal/pkg/models"
+	"github.com/infinity-oj/server-v2/pkg/models"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"

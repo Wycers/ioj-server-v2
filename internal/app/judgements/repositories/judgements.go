@@ -6,7 +6,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/infinity-oj/server-v2/internal/pkg/models"
+	"github.com/infinity-oj/server-v2/pkg/models"
 	"github.com/jinzhu/gorm"
 	"go.uber.org/zap"
 )

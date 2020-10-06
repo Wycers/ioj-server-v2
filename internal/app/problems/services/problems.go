@@ -2,7 +2,7 @@ package services
 
 import (
 	"github.com/infinity-oj/server-v2/internal/app/problems/repositories"
-	"github.com/infinity-oj/server-v2/internal/pkg/models"
+	"github.com/infinity-oj/server-v2/pkg/models"
 	"go.uber.org/zap"
 )
 

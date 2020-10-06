@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 
-	"github.com/infinity-oj/server-v2/internal/pkg/models"
+	"github.com/infinity-oj/server-v2/pkg/models"
 )
 
 // Options is  configuration of database

@@ -9,9 +9,9 @@ import (
 
 	"github.com/infinity-oj/server-v2/internal/pkg/crypto"
 
-	"github.com/infinity-oj/server-v2/internal/pkg/nodeEngine"
+	"github.com/infinity-oj/server-v2/pkg/nodeEngine"
 
-	"github.com/infinity-oj/server-v2/internal/pkg/models"
+	"github.com/infinity-oj/server-v2/pkg/models"
 
 	"github.com/google/uuid"
 	"github.com/infinity-oj/server-v2/internal/app/judgements/repositories"
