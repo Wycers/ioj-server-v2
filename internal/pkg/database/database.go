@@ -49,6 +49,7 @@ func New(o *Options) (*gorm.DB, error) {
 		&models.Judgement{},
 		&models.Submission{},
 		&models.Process{},
+		&models.Role{},
 	)
 
 	return db, nil

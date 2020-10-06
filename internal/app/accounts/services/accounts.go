@@ -20,6 +20,8 @@ type Service interface {
 	CreateAccount(username, password, email string) (account *models.Account, err error)
 
 	VerifyCredential(username, password string) (isValid bool, err error)
+
+	GetRoleById(accountId uint64) (roles []*models.Role, err error)
 }
 
 type DefaultService struct {
@@ -34,6 +36,11 @@ func (s *DefaultService) GetAccount(name string) (account *models.Account, err e
 
 func (s *DefaultService) GetAccountById(id uint64) (account *models.Account, err error) {
 	account, err = s.Repository.GetAccountById(id)
+	return
+}
+
+func (s *DefaultService) GetRoleById(accountId uint64) (roles []*models.Role, err error) {
+	roles, err = s.Repository.GetRoles(accountId)
 	return
 }
 

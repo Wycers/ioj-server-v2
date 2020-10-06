@@ -18,6 +18,8 @@ type Controller interface {
 	CreatePrincipal(c *gin.Context)
 	GetPrincipal(c *gin.Context)
 	DeletePrincipal(c *gin.Context)
+
+	GetRole(c *gin.Context)
 }
 
 type DefaultController struct {
@@ -188,6 +190,18 @@ func (d DefaultController) CreatePrincipal(c *gin.Context) {
 
 	session = sessions.New()
 	session.AccountId = account.ID
+
+	roles, err := d.service.GetRoleById(account.ID)
+	if err != nil {
+		d.logger.Error("ger roles failed", zap.Uint64("accountId", account.ID))
+	}
+	if roles != nil {
+		session.Roles = []string{}
+		for _, v := range roles {
+			session.Roles = append(session.Roles, v.Name)
+		}
+	}
+
 	err = session.Save(c)
 	if err != nil {
 		d.logger.Error("verify credential, save session", zap.String("username", request.Username))
@@ -228,4 +242,18 @@ func (d DefaultController) DeletePrincipal(c *gin.Context) {
 
 func (d DefaultController) DeleteAccount(c *gin.Context) {
 	c.AbortWithStatus(http.StatusNotImplemented)
+}
+
+func (d DefaultController) GetRole(c *gin.Context) {
+	session := sessions.GetSession(c)
+	if session == nil {
+		d.logger.Debug("get principal failed")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"roles": session.Roles,
+	})
+
 }

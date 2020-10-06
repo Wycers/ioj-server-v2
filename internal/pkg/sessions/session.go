@@ -2,14 +2,16 @@ package sessions
 
 import (
 	"encoding/json"
+	"time"
+
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"time"
 )
 
 // Data represents the sessions.
 type Session struct {
-	AccountId uint64 `json:"accountId"`
+	AccountId uint64   `json:"accountId"`
+	Roles     []string `json:"roles"`
 
 	ExpTime time.Time `json:"exp_time"`
 }

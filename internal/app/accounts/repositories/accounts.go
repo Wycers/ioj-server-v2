@@ -15,11 +15,23 @@ type Repository interface {
 
 	UpdateCredential(u *models.Credential) (err error)
 	QueryCredential(username string) (u *models.Credential, err error)
+
+	GetRoles(accountId uint64) (roles []*models.Role, err error)
 }
 
 type DefaultRepository struct {
 	logger *zap.Logger
 	db     *gorm.DB
+}
+
+func (s *DefaultRepository) GetRoles(accountId uint64) (roles []*models.Role, err error) {
+	s.logger.Debug("get roles",
+		zap.Uint64("account id", accountId),
+	)
+	if err = s.db.Table("roles").Where("account_id = ?", accountId).Find(&roles).Error; err != nil {
+		return nil, err
+	}
+	return
 }
 
 // CreateAccount
