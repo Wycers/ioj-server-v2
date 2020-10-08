@@ -1,12 +1,13 @@
 package controllers
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/infinity-oj/server-v2/internal/app/submissions/services"
 	"github.com/infinity-oj/server-v2/internal/pkg/sessions"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 type Controller interface {
@@ -32,7 +33,7 @@ func (d *DefaultController) CreateSubmission(c *gin.Context) {
 
 	request := struct {
 		ProblemId string `json:"problemId" binding:"required"`
-		UserSpace string `json:"userSpace" binding:"required"`
+		UserSpace string `json:"volume" binding:"required"`
 	}{}
 
 	if err := c.ShouldBind(&request); err != nil {
