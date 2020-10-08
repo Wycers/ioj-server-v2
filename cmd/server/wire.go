@@ -10,8 +10,10 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/processes"
 	"github.com/infinity-oj/server-v2/internal/app/server"
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
+	"github.com/infinity-oj/server-v2/internal/app/volumes"
 	"github.com/infinity-oj/server-v2/internal/pkg/config"
 	"github.com/infinity-oj/server-v2/internal/pkg/database"
+	"github.com/infinity-oj/server-v2/internal/pkg/files"
 	"github.com/infinity-oj/server-v2/internal/pkg/jaeger"
 	"github.com/infinity-oj/server-v2/internal/pkg/log"
 	"github.com/infinity-oj/server-v2/internal/pkg/transports/http"
@@ -24,12 +26,14 @@ var providerSet = wire.NewSet(
 	server.ProviderSet,
 	database.ProviderSet,
 	jaeger.ProviderSet,
+	files.ProviderSet,
 
 	problems.ProviderSet,
 	submissions.ProviderSet,
 	judgements.ProviderSet,
 	accounts.ProviderSet,
 	processes.ProviderSet,
+	volumes.ProviderSet,
 )
 
 func CreateApp(cf string) (*server.Application, error) {

@@ -28,8 +28,13 @@ import (
 	controllers2 "github.com/infinity-oj/server-v2/internal/app/submissions/controllers"
 	repositories2 "github.com/infinity-oj/server-v2/internal/app/submissions/repositories"
 	services2 "github.com/infinity-oj/server-v2/internal/app/submissions/services"
+	"github.com/infinity-oj/server-v2/internal/app/volumes"
+	controllers6 "github.com/infinity-oj/server-v2/internal/app/volumes/controllers"
+	repositories6 "github.com/infinity-oj/server-v2/internal/app/volumes/repositories"
+	services6 "github.com/infinity-oj/server-v2/internal/app/volumes/services"
 	"github.com/infinity-oj/server-v2/internal/pkg/config"
 	"github.com/infinity-oj/server-v2/internal/pkg/database"
+	"github.com/infinity-oj/server-v2/internal/pkg/files"
 	"github.com/infinity-oj/server-v2/internal/pkg/jaeger"
 	"github.com/infinity-oj/server-v2/internal/pkg/log"
 	"github.com/infinity-oj/server-v2/internal/pkg/transports/http"
@@ -86,7 +91,19 @@ func CreateApp(cf string) (*server.Application, error) {
 	processesService := services5.NewProcessService(logger, repository3)
 	controller4 := controllers5.New(logger, processesService)
 	initProcessGroupFn := processes.CreateInitControllersFn(controller4)
-	initControllers := server.CreateInitControllersFn(initProblemGroupFn, initSubmissionGroupFn, initJudgementGroupFn, initAccountGroupFn, initProcessGroupFn)
+	filesOptions, err := files.NewOptions(viper, logger)
+	if err != nil {
+		return nil, err
+	}
+	fileManager, err := files.New(filesOptions)
+	if err != nil {
+		return nil, err
+	}
+	repository5 := repositories6.NewFileManager(logger, fileManager)
+	servicesService := services6.NewVolumeService(logger, repository5)
+	controller5 := controllers6.New(logger, servicesService)
+	initVolumnGroupFn := volumes.CreateInitControllersFn(controller5)
+	initControllers := server.CreateInitControllersFn(initProblemGroupFn, initSubmissionGroupFn, initJudgementGroupFn, initAccountGroupFn, initProcessGroupFn, initVolumnGroupFn)
 	configuration, err := jaeger.NewConfiguration(viper, logger)
 	if err != nil {
 		return nil, err
@@ -109,4 +126,4 @@ func CreateApp(cf string) (*server.Application, error) {
 
 // wire.go:
 
-var providerSet = wire.NewSet(log.ProviderSet, config.ProviderSet, http.ProviderSet, server.ProviderSet, database.ProviderSet, jaeger.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, accounts.ProviderSet, processes.ProviderSet)
+var providerSet = wire.NewSet(log.ProviderSet, config.ProviderSet, http.ProviderSet, server.ProviderSet, database.ProviderSet, jaeger.ProviderSet, files.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, accounts.ProviderSet, processes.ProviderSet, volumes.ProviderSet)

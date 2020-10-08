@@ -110,3 +110,20 @@ func (m *LocalFileManager) IsFileExists(filePath string) (bool, error) {
 func (m *LocalFileManager) IsDirectoryExists(fileName string) (bool, error) {
 	panic("implement me")
 }
+
+func (m *LocalFileManager) GetFilesAndDirs(dsirname string) (files []string, dirs []string, err error) {
+	tmpDirs, err := ioutil.ReadDir(dsirname)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, file := range tmpDirs {
+		if file.IsDir() { // 目录, 递归遍历
+			dirs = append(dirs, file.Name())
+		} else {
+			files = append(files, file.Name())
+		}
+	}
+
+	return files, dirs, nil
+}

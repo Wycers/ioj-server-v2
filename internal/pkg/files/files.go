@@ -23,6 +23,7 @@ type FileManager interface {
 	FetchFile(fileName string) ([]byte, error)
 	IsFileExists(fileName string) (bool, error)
 	IsDirectoryExists(fileName string) (bool, error)
+	GetFilesAndDirs(dirname string) ([]string, []string, error)
 }
 
 func NewOptions(v *viper.Viper, logger *zap.Logger) (*Options, error) {
@@ -30,7 +31,7 @@ func NewOptions(v *viper.Viper, logger *zap.Logger) (*Options, error) {
 		err error
 		o   = new(Options)
 	)
-	if err = v.UnmarshalKey("files", o); err != nil {
+	if err = v.UnmarshalKey("volumes", o); err != nil {
 		return nil, err
 	}
 
@@ -49,7 +50,7 @@ func New(o *Options) (FileManager, error) {
 			return fm, nil
 		}
 	default:
-		return nil, errors.New("unknown store type")
+		return nil, errors.New("unknown store type: " + o.Type)
 	}
 }
 
