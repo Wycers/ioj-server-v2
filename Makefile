@@ -13,6 +13,8 @@ wire:
 	wire ./...
 
 $(BIN_FILE): clean wire
+	go env -w GOOS=windows
+	go env -w GOARCH=amd64
 	go build -o ./dist/$(BIN_FILE)  ./cmd/server
 
 .PHONY: run
