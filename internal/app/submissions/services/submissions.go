@@ -3,9 +3,11 @@ package services
 import (
 	"errors"
 
+	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
+
 	"go.uber.org/zap"
 
-	judgementRepository "github.com/infinity-oj/server-v2/internal/app/judgements/repositories"
+	judgementService "github.com/infinity-oj/server-v2/internal/app/judgements/services"
 	problemRepository "github.com/infinity-oj/server-v2/internal/app/problems/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/submissions/repositories"
 	"github.com/infinity-oj/server-v2/pkg/models"
@@ -21,10 +23,9 @@ type DefaultSubmissionService struct {
 	logger               *zap.Logger
 	SubmissionRepository repositories.Repository
 	ProblemRepository    problemRepository.Repository
-	JudgementRepository  judgementRepository.Repository
+	JudgementService     judgementService.JudgementsService
 
-	processMap map[string]string
-	idMap      map[string]int
+	scheduler scheduler.Scheduler
 }
 
 func (d DefaultSubmissionService) GetSubmissions(problemId string, page, pageSize int) (res []*models.Submission, err error) {
@@ -72,7 +73,7 @@ func (d DefaultSubmissionService) Create(submitterID uint64, problemName, userSp
 		return nil, nil, err
 	}
 
-	j, err = d.JudgementRepository.Create(s.ID, problem.ID)
+	j, err = d.JudgementService.CreateJudgement(submitterID, problem.ProcessId, s.ID)
 	return
 }
 
@@ -80,14 +81,15 @@ func NewSubmissionService(
 	logger *zap.Logger,
 	Repository repositories.Repository,
 	pRepository problemRepository.Repository,
-	jRepository judgementRepository.Repository,
+	jService judgementService.JudgementsService,
 ) SubmissionsService {
 	return &DefaultSubmissionService{
 		logger:               logger.With(zap.String("type", "DefaultSubmissionService")),
 		SubmissionRepository: Repository,
 		ProblemRepository:    pRepository,
-		JudgementRepository:  jRepository,
-		processMap:           make(map[string]string),
-		idMap:                make(map[string]int),
+
+		JudgementService: jService,
+
+		scheduler: scheduler.New(logger),
 	}
 }

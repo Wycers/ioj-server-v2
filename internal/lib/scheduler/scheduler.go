@@ -55,7 +55,7 @@ func (s scheduler) List() {
 			continue
 		}
 
-		fmt.Printf("judgement id: %s\ntask id:%s\ntype: %s\n locked: %t\n\n",
+		fmt.Printf("judgement id: %s\ntask id:%s\ntype: %s\nlocked: %t\n\n",
 			element.JudgementId,
 			element.TaskId,
 			element.Type,
@@ -99,7 +99,8 @@ func (s scheduler) NewProcessRuntime(judgement *models.Judgement, process *model
 	}
 
 	s.processes[judgementId] = pr
-	return nil
+
+	return forward(pr)
 }
 
 type TaskElement struct {
@@ -115,9 +116,6 @@ type TaskElement struct {
 }
 
 func (s scheduler) PushTask(blockId int, task *models.Task) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	s.logger.Debug("push task in tasks",
 		zap.String("task id", task.TaskId),
 		zap.String("task type", task.Type),
@@ -167,6 +165,39 @@ func (s scheduler) FetchTask(judgementId, taskId, taskType string) *TaskElement 
 	return nil
 }
 
+func forward(pr *processRuntime) error {
+
+	ids := pr.graph.Run()
+
+	for _, block := range ids {
+		var inputs []string
+		for _, linkId := range block.Inputs {
+			if data, ok := pr.result[linkId]; ok {
+				inputs = append(inputs, data)
+			} else {
+				return errors.New("wrong process definition")
+			}
+		}
+
+		properties, err := json.Marshal(block.Properties)
+		if err != nil {
+			return err
+		}
+
+		newTask := &models.Task{
+			JudgementId: pr.judgement.JudgementId,
+			TaskId:      uuid.New().String(),
+			Type:        block.Type,
+			Properties:  string(properties),
+			Inputs:      strings.Join(inputs, ","),
+			Outputs:     "",
+		}
+		s.PushTask(block.Id, newTask)
+	}
+
+	return nil
+}
+
 func (s scheduler) FinishTask(element *TaskElement, outputs []string) error {
 	// TODO: update task
 
@@ -198,34 +229,7 @@ func (s scheduler) FinishTask(element *TaskElement, outputs []string) error {
 
 	block.Done()
 
-	ids := pr.graph.Run()
-
-	for _, block := range ids {
-		var inputs []string
-		for _, linkId := range block.Inputs {
-			if data, ok := pr.result[linkId]; ok {
-				inputs = append(inputs, data)
-			} else {
-				return errors.New("wrong process definition")
-			}
-		}
-
-		properties, err := json.Marshal(block.Properties)
-		if err != nil {
-			return err
-		}
-
-		newTask := &models.Task{
-			JudgementId: element.JudgementId,
-			TaskId:      uuid.New().String(),
-			Type:        block.Type,
-			Properties:  string(properties),
-			Inputs:      strings.Join(inputs, ","),
-			Outputs:     "",
-		}
-		s.PushTask(block.Id, newTask)
-	}
-	return nil
+	return forward(pr)
 }
 func (s scheduler) RemoveTask(element *TaskElement) {
 	s.mutex.Lock()

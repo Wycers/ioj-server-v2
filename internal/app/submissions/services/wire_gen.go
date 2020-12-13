@@ -7,7 +7,7 @@ package services
 
 import (
 	"github.com/google/wire"
-	repositories3 "github.com/infinity-oj/server-v2/internal/app/judgements/repositories"
+	"github.com/infinity-oj/server-v2/internal/app/judgements/services"
 	repositories2 "github.com/infinity-oj/server-v2/internal/app/problems/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/submissions/repositories"
 	"github.com/infinity-oj/server-v2/internal/pkg/config"
@@ -17,7 +17,7 @@ import (
 
 // Injectors from wire.go:
 
-func CreateSubmissionsService(cf string, sto repositories.Repository, sto2 repositories2.Repository, sto3 repositories3.Repository) (SubmissionsService, error) {
+func CreateSubmissionsService(cf string, sto repositories.Repository, sto2 repositories2.Repository, sto3 services.JudgementsService) (SubmissionsService, error) {
 	viper, err := config.New(cf)
 	if err != nil {
 		return nil, err

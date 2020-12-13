@@ -14,7 +14,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/judgements"
 	controllers3 "github.com/infinity-oj/server-v2/internal/app/judgements/controllers"
 	repositories3 "github.com/infinity-oj/server-v2/internal/app/judgements/repositories"
-	services3 "github.com/infinity-oj/server-v2/internal/app/judgements/services"
+	services2 "github.com/infinity-oj/server-v2/internal/app/judgements/services"
 	"github.com/infinity-oj/server-v2/internal/app/problems"
 	"github.com/infinity-oj/server-v2/internal/app/problems/controllers"
 	"github.com/infinity-oj/server-v2/internal/app/problems/repositories"
@@ -27,7 +27,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
 	controllers2 "github.com/infinity-oj/server-v2/internal/app/submissions/controllers"
 	repositories2 "github.com/infinity-oj/server-v2/internal/app/submissions/repositories"
-	services2 "github.com/infinity-oj/server-v2/internal/app/submissions/services"
+	services3 "github.com/infinity-oj/server-v2/internal/app/submissions/services"
 	"github.com/infinity-oj/server-v2/internal/app/volumes"
 	controllers6 "github.com/infinity-oj/server-v2/internal/app/volumes/controllers"
 	repositories6 "github.com/infinity-oj/server-v2/internal/app/volumes/repositories"
@@ -77,11 +77,11 @@ func CreateApp(cf string) (*server.Application, error) {
 	initProblemGroupFn := problems.CreateInitControllersFn(controller)
 	repositoriesRepository := repositories2.NewMysqlSubmissionsRepository(logger, db)
 	repository2 := repositories3.NewJudgementRepository(logger, db)
-	submissionsService := services2.NewSubmissionService(logger, repositoriesRepository, repository, repository2)
+	repository3 := repositories4.New(logger, db)
+	judgementsService := services2.NewJudgementsService(logger, repository2, repository3, repositoriesRepository)
+	submissionsService := services3.NewSubmissionService(logger, repositoriesRepository, repository, judgementsService)
 	controllersController := controllers2.New(logger, submissionsService)
 	initSubmissionGroupFn := submissions.CreateInitControllersFn(controllersController)
-	repository3 := repositories4.New(logger, db)
-	judgementsService := services3.NewJudgementsService(logger, repository2, repository3, repositoriesRepository)
 	controller2 := controllers3.New(logger, judgementsService)
 	initJudgementGroupFn := judgements.CreateInitControllersFn(controller2)
 	repository4 := repositories5.New(logger, db)

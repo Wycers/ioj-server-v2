@@ -29,7 +29,7 @@ type JudgementsService interface {
 	ReserveTask(taskId string) (token string, err error)
 }
 
-type DefaultJudgementsService struct {
+type Service struct {
 	mutex *sync.Mutex
 
 	logger               *zap.Logger
@@ -41,7 +41,9 @@ type DefaultJudgementsService struct {
 	tokenMap  map[string]string
 }
 
-func (d DefaultJudgementsService) GetTasks(taskType string) (tasks []*models.Task, err error) {
+func (d Service) GetTasks(taskType string) (tasks []*models.Task, err error) {
+	d.scheduler.List()
+
 	d.logger.Info("get task", zap.String("type", taskType))
 	element := d.scheduler.FetchTask("*", "*", taskType)
 	if element != nil {
@@ -56,7 +58,7 @@ func (d DefaultJudgementsService) GetTasks(taskType string) (tasks []*models.Tas
 	return
 }
 
-func (d DefaultJudgementsService) GetTask(taskId string) (task *models.Task, err error) {
+func (d Service) GetTask(taskId string) (task *models.Task, err error) {
 	d.logger.Info("get task",
 		zap.String("task id", taskId),
 	)
@@ -73,7 +75,7 @@ func (d DefaultJudgementsService) GetTask(taskId string) (task *models.Task, err
 	return
 }
 
-func (d DefaultJudgementsService) UpdateTask(token, taskId, outputs string) (task *models.Task, err error) {
+func (d Service) UpdateTask(token, taskId, outputs string) (task *models.Task, err error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -131,7 +133,7 @@ func (d DefaultJudgementsService) UpdateTask(token, taskId, outputs string) (tas
 	return task, nil
 }
 
-func (d DefaultJudgementsService) ReserveTask(taskId string) (token string, err error) {
+func (d Service) ReserveTask(taskId string) (token string, err error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -151,7 +153,7 @@ func (d DefaultJudgementsService) ReserveTask(taskId string) (token string, err 
 	return token, nil
 }
 
-func (d DefaultJudgementsService) UpdateJudgement(judgementId string, score int) (*models.Judgement, error) {
+func (d Service) UpdateJudgement(judgementId string, score int) (*models.Judgement, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
@@ -169,13 +171,13 @@ func (d DefaultJudgementsService) UpdateJudgement(judgementId string, score int)
 	return nil, nil
 }
 
-func (d DefaultJudgementsService) CreateJudgement(accountId, processId, submissionId uint64) (*models.Judgement, error) {
+func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (*models.Judgement, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
 	d.logger.Debug("create judgement",
 		zap.Uint64("account id", accountId),
-		zap.Uint64("processes id", processId),
+		zap.Uint64("process id", processId),
 		zap.Uint64("submission id", submissionId),
 	)
 
@@ -228,11 +230,11 @@ func (d DefaultJudgementsService) CreateJudgement(accountId, processId, submissi
 	return judgement, err
 }
 
-func (d DefaultJudgementsService) GetJudgement() (*models.Judgement, error) {
+func (d Service) GetJudgement() (*models.Judgement, error) {
 	panic("implement me")
 }
 
-func (d DefaultJudgementsService) GetJudgements() ([]*models.Judgement, error) {
+func (d Service) GetJudgements() ([]*models.Judgement, error) {
 	panic("implement me")
 }
 
@@ -242,7 +244,7 @@ func NewJudgementsService(
 	ProcessRepository processRepository.Repository,
 	SubmissionRepository submissionRepository.Repository,
 ) JudgementsService {
-	return &DefaultJudgementsService{
+	return &Service{
 		mutex:                &sync.Mutex{},
 		logger:               logger.With(zap.String("type", "DefaultJudgementService")),
 		Repository:           Repository,

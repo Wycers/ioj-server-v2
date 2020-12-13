@@ -4,7 +4,7 @@ package services
 
 import (
 	"github.com/google/wire"
-	jRepositories "github.com/infinity-oj/server-v2/internal/app/judgements/repositories"
+	jService "github.com/infinity-oj/server-v2/internal/app/judgements/services"
 	pRepositories "github.com/infinity-oj/server-v2/internal/app/problems/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/submissions/repositories"
 	"github.com/infinity-oj/server-v2/internal/pkg/config"
@@ -23,7 +23,7 @@ func CreateSubmissionsService(
 	cf string,
 	sto repositories.Repository,
 	sto2 pRepositories.Repository,
-	sto3 jRepositories.Repository,
+	sto3 jService.JudgementsService,
 ) (SubmissionsService, error) {
 	panic(wire.Build(testProviderSet))
 }

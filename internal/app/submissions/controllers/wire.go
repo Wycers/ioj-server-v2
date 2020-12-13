@@ -4,8 +4,10 @@ package controllers
 
 import (
 	"github.com/google/wire"
-	repositories3 "github.com/infinity-oj/server-v2/internal/app/judgements/repositories"
+	jRepository "github.com/infinity-oj/server-v2/internal/app/judgements/repositories"
+	jService "github.com/infinity-oj/server-v2/internal/app/judgements/services"
 	repositories2 "github.com/infinity-oj/server-v2/internal/app/problems/repositories"
+	repositories3 "github.com/infinity-oj/server-v2/internal/app/processes/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/submissions/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/submissions/services"
 	"github.com/infinity-oj/server-v2/internal/pkg/config"
@@ -21,6 +23,8 @@ var providerSet = wire.NewSet(
 	repositories.ProviderSet,
 	repositories2.ProviderSet,
 	repositories3.ProviderSet,
+	jService.ProviderSet,
+	jRepository.ProviderSet,
 
 	ProviderSet,
 )
