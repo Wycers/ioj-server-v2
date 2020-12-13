@@ -5,9 +5,9 @@ type Submission struct {
 
 	SubmissionId string `json:"submissionId"`
 
-	SubmitterId  uint64 `json:"submitterId"`
+	SubmitterId uint64 `json:"submitterId"`
 
 	ProblemId uint64 `json:"problemId"`
 
-	UserSpace string `json:"userSpace"`
+	UserVolume string `json:"userVolume"`
 }

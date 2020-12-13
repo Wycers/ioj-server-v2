@@ -8,6 +8,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/problems"
 	"github.com/infinity-oj/server-v2/internal/app/processes"
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
+	"github.com/infinity-oj/server-v2/internal/app/volumes"
 	"github.com/infinity-oj/server-v2/internal/pkg/transports/http"
 )
 
@@ -17,6 +18,7 @@ func CreateInitControllersFn(
 	judgementInit judgements.InitJudgementGroupFn,
 	accountInit accounts.InitAccountGroupFn,
 	processInit processes.InitProcessGroupFn,
+	volumeInit volumes.InitVolumnGroupFn,
 ) http.InitControllers {
 	return func(res *gin.Engine) {
 		api := res.Group("/api")
@@ -27,6 +29,7 @@ func CreateInitControllersFn(
 		judgementInit(v1)
 		accountInit(v1)
 		processInit(v1)
+		volumeInit(v1)
 	}
 }
 

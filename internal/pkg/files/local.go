@@ -1,7 +1,9 @@
 package files
 
 import (
+	"archive/zip"
 	"errors"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -11,6 +13,74 @@ import (
 
 type LocalFileManager struct {
 	base string
+}
+
+func (m *LocalFileManager) ArchiveDirectory(fileName string) (file *os.File, err error) {
+
+	source, err := GetFileAbsPath(m.base, fileName)
+	if err != nil {
+		return nil, err
+	}
+
+	zipfile, err := ioutil.TempFile("", "*.zip")
+	if err != nil {
+		return nil, err
+	}
+	defer zipfile.Close()
+
+	archive := zip.NewWriter(zipfile)
+	defer archive.Close()
+
+	info, err := os.Stat(source)
+	if err != nil {
+		return nil, err
+
+	}
+
+	var baseDir string
+	if info.IsDir() {
+		baseDir = filepath.Base(source)
+	}
+
+	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		header, err := zip.FileInfoHeader(info)
+		if err != nil {
+			return err
+		}
+
+		if baseDir != "" {
+			header.Name = filepath.Join(baseDir, strings.TrimPrefix(path, source))
+		}
+
+		if info.IsDir() {
+			header.Name += "/"
+		} else {
+			header.Method = zip.Deflate
+		}
+
+		writer, err := archive.CreateHeader(header)
+		if err != nil {
+			return err
+		}
+
+		if info.IsDir() {
+			return nil
+		}
+
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
+		_, err = io.Copy(writer, file)
+		return err
+	})
+
+	return zipfile, err
 }
 
 func (m *LocalFileManager) FetchFile(fileName string) ([]byte, error) {
@@ -109,4 +179,21 @@ func (m *LocalFileManager) IsFileExists(filePath string) (bool, error) {
 
 func (m *LocalFileManager) IsDirectoryExists(fileName string) (bool, error) {
 	panic("implement me")
+}
+
+func (m *LocalFileManager) GetFilesAndDirs(dsirname string) (files []string, dirs []string, err error) {
+	tmpDirs, err := ioutil.ReadDir(dsirname)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, file := range tmpDirs {
+		if file.IsDir() { // 目录, 递归遍历
+			dirs = append(dirs, file.Name())
+		} else {
+			files = append(files, file.Name())
+		}
+	}
+
+	return files, dirs, nil
 }

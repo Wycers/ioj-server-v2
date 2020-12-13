@@ -21,3 +21,6 @@ jaeger:
   sampler:
     type: const
     param: 1
+volumes:
+  type: local
+  base: test_files
