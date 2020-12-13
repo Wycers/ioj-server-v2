@@ -1,6 +1,8 @@
 package services
 
 import (
+	"os"
+
 	"github.com/google/uuid"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/repositories"
 	"github.com/infinity-oj/server-v2/pkg/models"
@@ -13,6 +15,7 @@ type Service interface {
 	CreateFile(volumeName, filename string, file []byte) error
 	CreateDirectory(volumeName, dirname string) error
 
+	DownloadDirectory(volumeName, dirname string) (file *os.File, err error)
 	GetDirectory(volumeName, dirname string) (directories, files []string, err error)
 	GetFile(volumeName, dirname, filename string) ([]byte, error)
 }
@@ -49,6 +52,10 @@ func (d DefaultService) CreateDirectory(volumeName, dirname string) error {
 
 func (d DefaultService) GetDirectory(volumeName, dirname string) (directories, files []string, err error) {
 	panic("implement me")
+}
+
+func (d DefaultService) DownloadDirectory(volumeName, dirname string) (file *os.File, err error) {
+	return d.Repository.ArchiveDirectory(volumeName, dirname)
 }
 
 func (d DefaultService) GetFile(volumeName, dirname, filename string) ([]byte, error) {

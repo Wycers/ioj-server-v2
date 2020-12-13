@@ -17,6 +17,7 @@ func CreateInitControllersFn(vc controllers.Controller) InitVolumnGroupFn {
 		r.POST("/volume/:name/file", vc.CreateFile)
 		r.POST("/volume/:name/directory", vc.CreateDirectory)
 
+		r.GET("/volume/:name/download", vc.DownloadDirectory)
 		r.GET("/volume/:name/file/:filename", vc.GetFile)
 		r.GET("/volume/:name/directory/:dirname", vc.GetDirectory)
 		r.GET("/volume/:name", vc.GetDirectory)

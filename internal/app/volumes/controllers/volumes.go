@@ -19,6 +19,7 @@ type Controller interface {
 	CreateFile(c *gin.Context)
 	CreateDirectory(c *gin.Context)
 
+	DownloadDirectory(c *gin.Context)
 	GetFile(c *gin.Context)
 	GetDirectory(c *gin.Context)
 }
@@ -124,6 +125,38 @@ func (d DefaultController) GetFile(c *gin.Context) {
 
 func (d DefaultController) GetDirectory(c *gin.Context) {
 	panic("implement me")
+}
+
+func (d DefaultController) DownloadDirectory(c *gin.Context) {
+
+	request := struct {
+		Dirname string `form:"dirname" binding:"required"`
+	}{}
+
+	if err := c.ShouldBindQuery(&request); err != nil {
+		errs, ok := err.(validator.ValidationErrors)
+		if !ok {
+			c.JSON(http.StatusOK, gin.H{
+				"msg": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg": errs.Error(),
+		})
+		return
+	}
+
+	volume := c.Param("name")
+
+	file, err := d.service.DownloadDirectory(volume, request.Dirname)
+	if err != nil {
+		d.logger.Error("Download directory", zap.Error(err))
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	c.File(file.Name())
 }
 
 func New(logger *zap.Logger, s services.Service) Controller {
