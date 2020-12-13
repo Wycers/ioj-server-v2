@@ -65,7 +65,7 @@ func (m DefaultRepository) Create(submitterId, problemId uint64, userSpace strin
 		SubmissionId: uuid.New().String(),
 		SubmitterId:  submitterId,
 		ProblemId:    problemId,
-		UserSpace:    userSpace,
+		UserVolume:   userSpace,
 	}
 
 	if err = m.db.Create(s).Error; err != nil {

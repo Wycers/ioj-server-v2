@@ -140,7 +140,7 @@ func (d DefaultJudgementsService) CreateJudgement(accountId, processId, submissi
 		return nil, errors.New("invalid request")
 	}
 	d.logger.Debug("create judgement",
-		zap.String("submission user space", submission.UserSpace),
+		zap.String("submission user space", submission.UserVolume),
 	)
 
 	// create judgement
