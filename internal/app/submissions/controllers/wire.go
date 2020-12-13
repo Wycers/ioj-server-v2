@@ -4,6 +4,7 @@ package controllers
 
 import (
 	"github.com/google/wire"
+	repositories3 "github.com/infinity-oj/server-v2/internal/app/judgements/repositories"
 	repositories2 "github.com/infinity-oj/server-v2/internal/app/problems/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/submissions/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/submissions/services"
@@ -19,6 +20,7 @@ var providerSet = wire.NewSet(
 	services.ProviderSet,
 	repositories.ProviderSet,
 	repositories2.ProviderSet,
+	repositories3.ProviderSet,
 
 	ProviderSet,
 )

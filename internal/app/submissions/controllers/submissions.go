@@ -55,7 +55,7 @@ func (d *DefaultController) CreateSubmission(c *gin.Context) {
 		zap.String("user space", request.UserSpace),
 	)
 
-	submission, err := d.service.Create(session.AccountId, request.ProblemId, request.UserSpace)
+	submission, judgement, err := d.service.Create(session.AccountId, request.ProblemId, request.UserSpace)
 	if err != nil {
 		d.logger.Error("create submission", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -63,7 +63,10 @@ func (d *DefaultController) CreateSubmission(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(200, submission)
+	c.JSON(200, &gin.H{
+		"submission": submission,
+		"judgement":  judgement,
+	})
 }
 
 func (d *DefaultController) GetSubmissions(c *gin.Context) {

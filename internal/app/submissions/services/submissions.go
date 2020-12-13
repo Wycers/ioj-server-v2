@@ -5,13 +5,14 @@ import (
 
 	"go.uber.org/zap"
 
+	judgementRepository "github.com/infinity-oj/server-v2/internal/app/judgements/repositories"
 	problemRepository "github.com/infinity-oj/server-v2/internal/app/problems/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/submissions/repositories"
 	"github.com/infinity-oj/server-v2/pkg/models"
 )
 
 type SubmissionsService interface {
-	Create(submitterID uint64, problemName string, userSpace string) (s *models.Submission, err error)
+	Create(submitterID uint64, problemName string, userSpace string) (s *models.Submission, j *models.Judgement, err error)
 	GetSubmission(submissionId string) (s *models.Submission, err error)
 	GetSubmissions(problemId string, page, pageSize int) (res []*models.Submission, err error)
 }
@@ -20,6 +21,7 @@ type DefaultSubmissionService struct {
 	logger               *zap.Logger
 	SubmissionRepository repositories.Repository
 	ProblemRepository    problemRepository.Repository
+	JudgementRepository  judgementRepository.Repository
 
 	processMap map[string]string
 	idMap      map[string]int
@@ -44,7 +46,7 @@ func (d DefaultSubmissionService) GetSubmission(submissionId string) (s *models.
 	return
 }
 
-func (d DefaultSubmissionService) Create(submitterID uint64, problemName, userSpace string) (s *models.Submission, err error) {
+func (d DefaultSubmissionService) Create(submitterID uint64, problemName, userSpace string) (s *models.Submission, j *models.Judgement, err error) {
 	d.logger.Debug("create submission",
 		zap.Uint64("submitter Id", submitterID),
 		zap.String("problem name", problemName),
@@ -53,11 +55,11 @@ func (d DefaultSubmissionService) Create(submitterID uint64, problemName, userSp
 	problem, err := d.ProblemRepository.GetProblemByName(problemName)
 	if err != nil {
 		d.logger.Error("create submission", zap.Error(err))
-		return nil, err
+		return nil, nil, err
 	}
 	if problem == nil {
 		d.logger.Error("create submission: unknown problem")
-		return nil, errors.New("unknown problem")
+		return nil, nil, errors.New("unknown problem")
 	}
 	d.logger.Debug("create submission",
 		zap.Uint64("submitter Id", submitterID),
@@ -67,8 +69,10 @@ func (d DefaultSubmissionService) Create(submitterID uint64, problemName, userSp
 	s, err = d.SubmissionRepository.Create(submitterID, problem.ID, userSpace)
 	if err != nil {
 		d.logger.Error("create submission", zap.Error(err))
-		return nil, err
+		return nil, nil, err
 	}
+
+	j, err = d.JudgementRepository.Create(s.ID, problem.ID)
 	return
 }
 
@@ -76,11 +80,13 @@ func NewSubmissionService(
 	logger *zap.Logger,
 	Repository repositories.Repository,
 	pRepository problemRepository.Repository,
+	jRepository judgementRepository.Repository,
 ) SubmissionsService {
 	return &DefaultSubmissionService{
 		logger:               logger.With(zap.String("type", "DefaultSubmissionService")),
 		SubmissionRepository: Repository,
 		ProblemRepository:    pRepository,
+		JudgementRepository:  jRepository,
 		processMap:           make(map[string]string),
 		idMap:                make(map[string]int),
 	}

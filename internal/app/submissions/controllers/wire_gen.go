@@ -7,6 +7,7 @@ package controllers
 
 import (
 	"github.com/google/wire"
+	repositories3 "github.com/infinity-oj/server-v2/internal/app/judgements/repositories"
 	repositories2 "github.com/infinity-oj/server-v2/internal/app/problems/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/submissions/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/submissions/services"
@@ -40,11 +41,12 @@ func CreateSubmissionController(cf string) (Controller, error) {
 	}
 	repository := repositories.NewMysqlSubmissionsRepository(logger, db)
 	repositoriesRepository := repositories2.New(logger, db)
-	submissionsService := services.NewSubmissionService(logger, repository, repositoriesRepository)
+	repository2 := repositories3.NewJudgementRepository(logger, db)
+	submissionsService := services.NewSubmissionService(logger, repository, repositoriesRepository, repository2)
 	controller := New(logger, submissionsService)
 	return controller, nil
 }
 
 // wire.go:
 
-var providerSet = wire.NewSet(log.ProviderSet, config.ProviderSet, database.ProviderSet, services.ProviderSet, repositories.ProviderSet, repositories2.ProviderSet, ProviderSet)
+var providerSet = wire.NewSet(log.ProviderSet, config.ProviderSet, database.ProviderSet, services.ProviderSet, repositories.ProviderSet, repositories2.ProviderSet, repositories3.ProviderSet, ProviderSet)
