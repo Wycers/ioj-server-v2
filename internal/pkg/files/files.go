@@ -2,6 +2,7 @@ package files
 
 import (
 	"errors"
+	"os"
 	"strings"
 
 	"github.com/google/wire"
@@ -24,6 +25,8 @@ type FileManager interface {
 	IsFileExists(fileName string) (bool, error)
 	IsDirectoryExists(fileName string) (bool, error)
 	GetFilesAndDirs(dirname string) ([]string, []string, error)
+
+	ArchiveDirectory(fileName string) (file *os.File, err error)
 }
 
 func NewOptions(v *viper.Viper, logger *zap.Logger) (*Options, error) {
