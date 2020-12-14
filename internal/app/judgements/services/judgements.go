@@ -2,6 +2,8 @@ package services
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -43,6 +45,27 @@ type Service struct {
 
 func (d Service) GetTasks(taskType string) (tasks []*models.Task, err error) {
 	d.scheduler.List()
+
+	for {
+		element := d.scheduler.FetchTask("*", "*", "basic/end")
+		if element == nil {
+			break
+		}
+		score, err := strconv.Atoi(element.Task.Inputs)
+		if err != nil {
+			d.logger.Error("wrong score", zap.Error(err))
+			return nil, err
+		}
+		judgement, err := d.UpdateJudgement(element.JudgementId, score)
+		if err != nil {
+			return nil, err
+		}
+		err = d.scheduler.FinishTask(element, []string{})
+		if err != nil {
+			return nil, err
+		}
+		fmt.Println("?", judgement)
+	}
 
 	d.logger.Info("get task", zap.String("type", taskType))
 	element := d.scheduler.FetchTask("*", "*", taskType)
@@ -139,6 +162,10 @@ func (d Service) ReserveTask(taskId string) (token string, err error) {
 
 	taskElement := d.scheduler.FetchTask("*", taskId, "*")
 
+	if taskElement == nil {
+		return "", errors.New("not found")
+	}
+
 	if !d.scheduler.LockTask(taskElement) {
 		return "", errors.New("participated")
 	}
@@ -159,16 +186,20 @@ func (d Service) UpdateJudgement(judgementId string, score int) (*models.Judgeme
 
 	d.logger.Debug("update judgement",
 		zap.String("judgement id", judgementId),
-		zap.Int("judgement id", score),
+		zap.Int("score", score),
 	)
 
 	// get judgement with judgementId
+	judgement, err := d.Repository.GetJudgement(judgementId)
+	if err != nil {
+		return nil, err
+	}
 
-	// change score to `score`
+	judgement.Score = score
 
-	// save judgement
+	err = d.Repository.Update(judgement)
 
-	return nil, nil
+	return judgement, err
 }
 
 func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (*models.Judgement, error) {

@@ -200,6 +200,7 @@ func forward(pr *processRuntime) error {
 			Inputs:      strings.Join(inputs, ","),
 			Outputs:     "",
 		}
+
 		s.PushTask(block.Id, newTask)
 	}
 
@@ -236,6 +237,8 @@ func (s scheduler) FinishTask(element *TaskElement, outputs []string) error {
 	}
 
 	block.Done()
+
+	s.RemoveTask(element)
 
 	return forward(pr)
 }

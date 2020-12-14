@@ -10,7 +10,7 @@ import (
 )
 
 type Repository interface {
-	Fetch() *models.Judgement
+	GetJudgement(judgementId string) (*models.Judgement, error)
 	Create(submissionId, processId uint64) (*models.Judgement, error)
 	Update(judgement *models.Judgement) error
 }
@@ -19,6 +19,20 @@ type DefaultRepository struct {
 	logger *zap.Logger
 	db     *gorm.DB
 	mutex  *sync.Mutex
+}
+
+func (m DefaultRepository) GetJudgement(judgementId string) (*models.Judgement, error) {
+
+	judgement := &models.Judgement{}
+	if err := m.db.Where(&models.Judgement{JudgementId: judgementId}).First(judgement).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, nil
+		} else {
+			m.logger.Error("query account failed", zap.String("judgement id", judgementId), zap.Error(err))
+		}
+		return nil, err
+	}
+	return judgement, nil
 }
 
 func (m DefaultRepository) Create(submissionId, processId uint64) (*models.Judgement, error) {
@@ -77,11 +91,6 @@ func (m DefaultRepository) Update(judgement *models.Judgement) error {
 //	return judgementInQueue, nil
 //
 //}
-
-func (m DefaultRepository) Fetch() *models.Judgement {
-	return nil
-}
-
 func NewJudgementRepository(logger *zap.Logger, db *gorm.DB) Repository {
 	return &DefaultRepository{
 		logger: logger.With(zap.String("type", "Repository")),
