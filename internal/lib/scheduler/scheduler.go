@@ -20,7 +20,7 @@ import (
 type Scheduler interface {
 	List()
 
-	NewProcessRuntime(judgement *models.Judgement, process *models.Process) error
+	NewProcessRuntime(submission *models.Submission, judgement *models.Judgement, process *models.Process) error
 
 	PushTask(blockId int, task *models.Task)
 	FetchTask(judgementId, taskId, taskType string) *TaskElement
@@ -31,9 +31,11 @@ type Scheduler interface {
 }
 
 type processRuntime struct {
-	judgement *models.Judgement
-	graph     *nodeEngine.Graph
-	result    map[int]string
+	submission *models.Submission
+	judgement  *models.Judgement
+
+	graph  *nodeEngine.Graph
+	result map[int]string
 }
 
 type scheduler struct {
@@ -73,7 +75,7 @@ type ProcessElement struct {
 }
 
 // NewProcessRuntime create new process runtime information with judgement and process
-func (s scheduler) NewProcessRuntime(judgement *models.Judgement, process *models.Process) error {
+func (s scheduler) NewProcessRuntime(submission *models.Submission, judgement *models.Judgement, process *models.Process) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -93,9 +95,10 @@ func (s scheduler) NewProcessRuntime(judgement *models.Judgement, process *model
 
 	result := make(map[int]string)
 	pr := &processRuntime{
-		judgement: judgement,
-		graph:     graph,
-		result:    result,
+		submission: submission,
+		judgement:  judgement,
+		graph:      graph,
+		result:     result,
 	}
 
 	s.processes[judgementId] = pr
@@ -179,7 +182,12 @@ func forward(pr *processRuntime) error {
 			}
 		}
 
+		for k, v := range block.Properties {
+			block.Properties[k] = strings.ReplaceAll(v, "<userVolume>", pr.submission.UserVolume)
+		}
+
 		properties, err := json.Marshal(block.Properties)
+
 		if err != nil {
 			return err
 		}

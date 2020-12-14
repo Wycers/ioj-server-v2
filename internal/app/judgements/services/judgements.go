@@ -225,7 +225,7 @@ func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (*mo
 	}
 	d.logger.Debug("create judgement successfully")
 
-	err = d.scheduler.NewProcessRuntime(judgement, process)
+	err = d.scheduler.NewProcessRuntime(submission, judgement, process)
 
 	return judgement, err
 }
