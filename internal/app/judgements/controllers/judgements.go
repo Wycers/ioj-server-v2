@@ -140,19 +140,19 @@ func (d *DefaultController) GetTask(c *gin.Context) {
 }
 
 func (d *DefaultController) UpdateTask(c *gin.Context) {
-	//session := sessions.GetSession(c)
-	//if session == nil {
-	//	d.logger.Debug("get principal failed")
-	//	c.AbortWithStatus(http.StatusUnauthorized)
-	//	return
-	//}
+	session := sessions.GetSession(c)
+	if session == nil {
+		d.logger.Debug("get principal failed")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 
 	taskId := c.Param("taskId")
 
-	//d.logger.Debug("update task",
-	//	zap.Uint64("account id", session.AccountId),
-	//	zap.String("task id", taskId),
-	//)
+	d.logger.Debug("update task",
+		zap.Uint64("account id", session.AccountId),
+		zap.String("task id", taskId),
+	)
 
 	request := struct {
 		Token   string `json:"token" binding:"required"`
