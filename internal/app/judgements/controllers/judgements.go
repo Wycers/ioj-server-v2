@@ -77,7 +77,25 @@ func (d *DefaultController) CreateJudgement(c *gin.Context) {
 }
 
 func (d *DefaultController) GetJudgements(c *gin.Context) {
-	c.AbortWithStatus(http.StatusNotImplemented)
+	d.logger.Debug("get judgements")
+	session := sessions.GetSession(c)
+	if session == nil {
+		d.logger.Debug("get principal failed")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	d.logger.Debug("create judgement", zap.Uint64("account id", session.AccountId))
+
+	judgements, err := d.service.GetJudgements(session.AccountId)
+	if err != nil {
+		d.logger.Error("create judgement", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, judgements)
 }
 
 func (d *DefaultController) GetJudgement(c *gin.Context) {

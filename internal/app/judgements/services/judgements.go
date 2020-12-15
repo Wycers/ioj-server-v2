@@ -20,8 +20,8 @@ import (
 )
 
 type JudgementsService interface {
-	GetJudgement() (*models.Judgement, error)
-	GetJudgements() ([]*models.Judgement, error)
+	GetJudgement(judgementId string) (*models.Judgement, error)
+	GetJudgements(accountId uint64) ([]*models.Judgement, error)
 	CreateJudgement(accountId, processId, submissionId uint64) (*models.Judgement, error)
 	UpdateJudgement(judgementId string, score int) (*models.Judgement, error)
 
@@ -261,12 +261,14 @@ func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (*mo
 	return judgement, err
 }
 
-func (d Service) GetJudgement() (*models.Judgement, error) {
-	panic("implement me")
+func (d Service) GetJudgement(judgementId string) (*models.Judgement, error) {
+	judgement, err := d.Repository.GetJudgement(judgementId)
+	return judgement, err
 }
 
-func (d Service) GetJudgements() ([]*models.Judgement, error) {
-	panic("implement me")
+func (d Service) GetJudgements(accountId uint64) ([]*models.Judgement, error) {
+	judgements, err := d.Repository.GetJudgementsByAccountId(accountId)
+	return judgements, err
 }
 
 func NewJudgementsService(
