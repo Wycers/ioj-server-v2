@@ -62,10 +62,10 @@ func (m DefaultRepository) GetSubmission(submissionId string) (*models.Submissio
 
 func (m DefaultRepository) Create(submitterId, problemId uint64, userSpace string) (s *models.Submission, err error) {
 	s = &models.Submission{
-		SubmissionId: uuid.New().String(),
-		SubmitterId:  submitterId,
-		ProblemId:    problemId,
-		UserVolume:   userSpace,
+		Name:        uuid.New().String(),
+		SubmitterId: submitterId,
+		ProblemId:   problemId,
+		UserVolume:  userSpace,
 	}
 
 	if err = m.db.Create(s).Error; err != nil {

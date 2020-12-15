@@ -3,7 +3,7 @@ package models
 type Submission struct {
 	Model
 
-	SubmissionId string `json:"submissionId"`
+	Name string `json:"submissionId"`
 
 	SubmitterId uint64 `json:"submitterId"`
 
