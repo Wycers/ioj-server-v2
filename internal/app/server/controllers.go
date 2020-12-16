@@ -30,6 +30,8 @@ func CreateInitControllersFn(
 		accountInit(v1)
 		processInit(v1)
 		volumeInit(v1)
+
+		res.Static("/assets/cli", "./assets/cli")
 	}
 }
 
