@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/google/uuid"
 
@@ -23,24 +22,21 @@ type JudgementsService interface {
 	GetJudgement(judgementId string) (*models.Judgement, error)
 	GetJudgements(accountId uint64) ([]*models.Judgement, error)
 	CreateJudgement(accountId, processId, submissionId uint64) (*models.Judgement, error)
-	UpdateJudgement(judgementId string, score float64) (*models.Judgement, error)
+	UpdateJudgement(judgementId string, status models.JudgeStatus, score float64, msg string) (*models.Judgement, error)
 
 	GetTasks(taskType string) (task []*models.Task, err error)
 	GetTask(taskId string) (task *models.Task, err error)
-	UpdateTask(token, taskId, outputs string) (task *models.Task, err error)
+	UpdateTask(taskId, outputs, warning, error string) (task *models.Task, err error)
 	ReserveTask(taskId string) (token string, err error)
 }
 
 type Service struct {
-	mutex *sync.Mutex
-
 	logger               *zap.Logger
 	Repository           repositories.Repository
 	processRepository    processRepository.Repository
 	submissionRepository submissionRepository.Repository
 
 	scheduler scheduler.Scheduler
-	tokenMap  map[string]string
 }
 
 func (d Service) GetTasks(taskType string) (tasks []*models.Task, err error) {
@@ -52,7 +48,7 @@ func (d Service) GetTasks(taskType string) (tasks []*models.Task, err error) {
 				d.logger.Error("wrong score", zap.Error(err))
 				return nil, err
 			} else {
-				judgement, err := d.UpdateJudgement(element.JudgementId, score)
+				judgement, err := d.UpdateJudgement(element.JudgementId, models.Accepted, score, "")
 				if err != nil {
 					return nil, err
 				}
@@ -98,20 +94,7 @@ func (d Service) GetTask(taskId string) (task *models.Task, err error) {
 	return
 }
 
-func (d Service) UpdateTask(token, taskId, outputs string) (task *models.Task, err error) {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
-	taskId, ok := d.tokenMap[token]
-
-	if !ok {
-		d.logger.Debug("invalid token: no such token")
-		return nil, errors.New("invalid token")
-	}
-
-	// token should only be used once
-	delete(d.tokenMap, token)
-
+func (d Service) UpdateTask(taskId, outputs, warning, error string) (task *models.Task, err error) {
 	taskElement := d.scheduler.FetchTask("*", taskId, "*")
 	if taskElement == nil {
 		d.logger.Debug("invalid token: no such task",
@@ -136,7 +119,17 @@ func (d Service) UpdateTask(token, taskId, outputs string) (task *models.Task, e
 		zap.String("task id", taskId),
 	)
 
-	// update task
+	if error != "" {
+		d.scheduler.RemoveTask(taskElement)
+		_, err := d.UpdateJudgement(taskElement.JudgementId, models.SystemError, 0, fmt.Sprintf("warning: %s\nerror: %s\n", warning, error))
+		if err != nil {
+			d.logger.Error("finish task failed", zap.Error(err))
+			return nil, err
+		}
+		return task, nil
+	}
+
+	//update task
 	//err := d.Repository.Update(element, outputs)
 	//if err != nil {
 	//	d.logger.Error("update task", zap.Error(err))
@@ -157,9 +150,6 @@ func (d Service) UpdateTask(token, taskId, outputs string) (task *models.Task, e
 }
 
 func (d Service) ReserveTask(taskId string) (token string, err error) {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
 	taskElement := d.scheduler.FetchTask("*", taskId, "*")
 
 	if taskElement == nil {
@@ -171,7 +161,6 @@ func (d Service) ReserveTask(taskId string) (token string, err error) {
 	}
 
 	token = uuid.New().String()
-	d.tokenMap[token] = taskId
 	d.logger.Debug("reserve task",
 		zap.String("task id", taskId),
 		zap.String("token", token),
@@ -180,12 +169,11 @@ func (d Service) ReserveTask(taskId string) (token string, err error) {
 	return token, nil
 }
 
-func (d Service) UpdateJudgement(judgementId string, score float64) (*models.Judgement, error) {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
+func (d Service) UpdateJudgement(judgementId string, status models.JudgeStatus, score float64, msg string) (*models.Judgement, error) {
 	d.logger.Debug("update judgement",
 		zap.String("judgement id", judgementId),
+		zap.String("judge status", string(status)),
+		zap.String("msg", msg),
 		zap.Float64("score", score),
 	)
 
@@ -196,6 +184,8 @@ func (d Service) UpdateJudgement(judgementId string, score float64) (*models.Jud
 	}
 
 	judgement.Score = score
+	judgement.Status = status
+	judgement.Msg = msg
 
 	err = d.Repository.Update(judgement)
 
@@ -203,9 +193,6 @@ func (d Service) UpdateJudgement(judgementId string, score float64) (*models.Jud
 }
 
 func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (*models.Judgement, error) {
-	d.mutex.Lock()
-	defer d.mutex.Unlock()
-
 	d.logger.Debug("create judgement",
 		zap.Uint64("account id", accountId),
 		zap.Uint64("process id", processId),
@@ -277,15 +264,43 @@ func NewJudgementsService(
 	ProcessRepository processRepository.Repository,
 	SubmissionRepository submissionRepository.Repository,
 ) JudgementsService {
+	s := scheduler.New(logger)
+
+	pendingJudgements, err := Repository.GetPendingJudgements()
+	if err != nil {
+		panic(err)
+	}
+
+	for _, judgement := range pendingJudgements {
+		// get process
+		process, err := ProcessRepository.GetProcess(judgement.ProcessId)
+		if err != nil {
+			panic(err)
+		}
+		if process == nil {
+			continue
+		}
+		// get submission
+		submission, err := SubmissionRepository.GetSubmissionById(judgement.SubmissionId)
+		if err != nil {
+			panic(err)
+		}
+		if submission == nil {
+			continue
+		}
+		logger.Debug("restore judgement",
+			zap.String("judgement id", judgement.JudgementId),
+			zap.String("submission user space", submission.UserVolume),
+		)
+		err = s.NewProcessRuntime(submission, judgement, process)
+	}
+
 	return &Service{
-		mutex:                &sync.Mutex{},
-		logger:               logger.With(zap.String("type", "DefaultJudgementService")),
+		logger:               logger.With(zap.String("type", "JudgementService")),
 		Repository:           Repository,
 		processRepository:    ProcessRepository,
 		submissionRepository: SubmissionRepository,
 
-		scheduler: scheduler.New(logger),
-
-		tokenMap: make(map[string]string),
+		scheduler: s,
 	}
 }

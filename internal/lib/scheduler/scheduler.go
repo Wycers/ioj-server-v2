@@ -208,8 +208,6 @@ func forward(pr *processRuntime) error {
 }
 
 func (s scheduler) FinishTask(element *TaskElement, outputs []string) error {
-	// TODO: update task
-
 	blockId := element.BlockId
 	pr, ok := s.processes[element.JudgementId]
 	if !ok {
@@ -220,7 +218,6 @@ func (s scheduler) FinishTask(element *TaskElement, outputs []string) error {
 	block := pr.graph.FindBlockById(blockId)
 
 	if len(block.Output) != len(outputs) {
-
 		msg := fmt.Sprintf("output slots mismatch, block %d expects %d but %d",
 			blockId,
 			len(block.Output),
@@ -311,7 +308,7 @@ var once sync.Once
 func New(logger *zap.Logger) Scheduler {
 	once.Do(func() {
 		s = &scheduler{
-			logger,
+			logger.With(zap.String("type", "scheduler")),
 			&sync.Mutex{},
 			&list.List{},
 			make(map[string]*processRuntime),

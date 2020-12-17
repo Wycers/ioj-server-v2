@@ -13,17 +13,28 @@ import (
 type Repository interface {
 	GetJudgement(judgementId string) (*models.Judgement, error)
 	GetJudgementsByAccountId(accountId uint64) ([]*models.Judgement, error)
+	GetPendingJudgements() ([]*models.Judgement, error)
 	Create(submissionId, processId uint64) (*models.Judgement, error)
 	Update(judgement *models.Judgement) error
 }
 
-type DefaultRepository struct {
+type repository struct {
 	logger *zap.Logger
 	db     *gorm.DB
 	mutex  *sync.Mutex
 }
 
-func (m DefaultRepository) GetJudgementsByAccountId(accountId uint64) (judgements []*models.Judgement, err error) {
+func (m repository) GetPendingJudgements() ([]*models.Judgement, error) {
+	var res []*models.Judgement
+	if err := m.db.
+		Model(&models.Judgement{}).
+		Where("status = ?", models.Pending).Find(&res).Error; err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+func (m repository) GetJudgementsByAccountId(accountId uint64) (judgements []*models.Judgement, err error) {
 	var result []*struct {
 		models.Judgement
 		models.Submission
@@ -55,7 +66,7 @@ func (m DefaultRepository) GetJudgementsByAccountId(accountId uint64) (judgement
 	return
 }
 
-func (m DefaultRepository) GetJudgement(judgementId string) (*models.Judgement, error) {
+func (m repository) GetJudgement(judgementId string) (*models.Judgement, error) {
 
 	judgement := &models.Judgement{}
 	if err := m.db.Where(&models.Judgement{JudgementId: judgementId}).First(judgement).Error; err != nil {
@@ -69,7 +80,7 @@ func (m DefaultRepository) GetJudgement(judgementId string) (*models.Judgement, 
 	return judgement, nil
 }
 
-func (m DefaultRepository) Create(submissionId, processId uint64) (*models.Judgement, error) {
+func (m repository) Create(submissionId, processId uint64) (*models.Judgement, error) {
 	judgementId := uuid.New().String()
 	judgement := &models.Judgement{
 		SubmissionId: submissionId,
@@ -87,13 +98,13 @@ func (m DefaultRepository) Create(submissionId, processId uint64) (*models.Judge
 	return judgement, nil
 }
 
-func (m DefaultRepository) Update(judgement *models.Judgement) error {
+func (m repository) Update(judgement *models.Judgement) error {
 	err := m.db.Save(&judgement).Error
 	return err
 }
 
 func NewJudgementRepository(logger *zap.Logger, db *gorm.DB) Repository {
-	return &DefaultRepository{
+	return &repository{
 		logger: logger.With(zap.String("type", "Repository")),
 		db:     db,
 	}

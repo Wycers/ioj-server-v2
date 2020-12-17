@@ -175,6 +175,8 @@ func (d *DefaultController) UpdateTask(c *gin.Context) {
 	request := struct {
 		Token   string `json:"token" binding:"required"`
 		Outputs string `json:"outputs" binding:"required"`
+		Warning string `json:"warning" binding:""`
+		Error   string `json:"error" binding:""`
 	}{}
 
 	if err := c.ShouldBind(&request); err != nil {
@@ -191,14 +193,16 @@ func (d *DefaultController) UpdateTask(c *gin.Context) {
 		})
 		return
 	}
-
 	d.logger.Debug("update task",
 		zap.String("token", request.Token),
+		zap.String("warning", request.Warning),
+		zap.String("error", request.Error),
 	)
 
-	task, err := d.service.UpdateTask(request.Token, taskId, request.Outputs)
+	task, err := d.service.UpdateTask(taskId, request.Outputs, request.Warning, request.Error)
 	if err != nil {
 		d.logger.Error("update task", zap.Error(err))
+
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"msg": err.Error(),
 		})

@@ -8,5 +8,6 @@ type Judgement struct {
 
 	JudgementId string
 	Status      JudgeStatus `sql:"type:judge_status"`
+	Msg         string
 	Score       float64
 }

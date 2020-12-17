@@ -35,8 +35,8 @@ func CreateJudgementsRepository(f string) (Repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	repository := NewJudgementRepository(logger, db)
-	return repository, nil
+	repositoriesRepository := NewJudgementRepository(logger, db)
+	return repositoriesRepository, nil
 }
 
 // wire.go:
