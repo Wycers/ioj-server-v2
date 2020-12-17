@@ -40,7 +40,7 @@ func (d DefaultController) CreateFile(c *gin.Context) {
 	// single formFile
 	formFile, err := c.FormFile("file")
 	if err != nil {
-		d.logger.Error("create file failed")
+		d.logger.Error("create file failed", zap.Error(err))
 		return
 	}
 	d.logger.Debug("upload file",
@@ -51,13 +51,13 @@ func (d DefaultController) CreateFile(c *gin.Context) {
 
 	file, err := formFile.Open()
 	if err != nil {
-		d.logger.Error("create file failed")
+		d.logger.Error("create file failed", zap.Error(err))
 		return
 	}
 	fileData, _ := ioutil.ReadAll(file)
 	err = d.service.CreateFile(volume, formFile.Filename, fileData)
 	if err != nil {
-		d.logger.Error("create file failed")
+		d.logger.Error("create file failed", zap.Error(err))
 		return
 	}
 
