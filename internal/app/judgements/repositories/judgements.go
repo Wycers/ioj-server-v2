@@ -2,11 +2,12 @@ package repositories
 
 import (
 	"fmt"
+	"sync"
+
 	"github.com/google/uuid"
 	"github.com/infinity-oj/server-v2/pkg/models"
 	"github.com/jinzhu/gorm"
 	"go.uber.org/zap"
-	"sync"
 )
 
 type Repository interface {
@@ -30,6 +31,7 @@ func (m DefaultRepository) GetJudgementsByAccountId(accountId uint64) (judgement
 	if err := m.db.Model(&models.Judgement{}).
 		Joins("left join submissions on judgements.submission_id = submissions.id").
 		Where("submissions.submitter_id = ?", accountId).
+		Order("judgements.id desc").
 		Limit(5).
 		Scan(&result).
 		Error; err != nil {
@@ -39,7 +41,7 @@ func (m DefaultRepository) GetJudgementsByAccountId(accountId uint64) (judgement
 	for _, res := range result {
 
 		judgements = append(judgements, &models.Judgement{
-			Model:        models.Model{
+			Model: models.Model{
 				CreatedAt: res.Judgement.CreatedAt,
 			},
 			SubmissionId: res.SubmissionId,

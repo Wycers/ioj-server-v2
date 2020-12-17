@@ -23,7 +23,7 @@ type JudgementsService interface {
 	GetJudgement(judgementId string) (*models.Judgement, error)
 	GetJudgements(accountId uint64) ([]*models.Judgement, error)
 	CreateJudgement(accountId, processId, submissionId uint64) (*models.Judgement, error)
-	UpdateJudgement(judgementId string, score int) (*models.Judgement, error)
+	UpdateJudgement(judgementId string, score float64) (*models.Judgement, error)
 
 	GetTasks(taskType string) (task []*models.Task, err error)
 	GetTask(taskId string) (task *models.Task, err error)
@@ -47,24 +47,24 @@ func (d Service) GetTasks(taskType string) (tasks []*models.Task, err error) {
 	d.scheduler.List()
 
 	for {
-		element := d.scheduler.FetchTask("*", "*", "basic/end")
-		if element == nil {
+		if element := d.scheduler.FetchTask("*", "*", "basic/end"); element != nil {
+			if score, err := strconv.ParseFloat(element.Task.Inputs, 64); err != nil {
+				d.logger.Error("wrong score", zap.Error(err))
+				return nil, err
+			} else {
+				judgement, err := d.UpdateJudgement(element.JudgementId, score)
+				if err != nil {
+					return nil, err
+				}
+				err = d.scheduler.FinishTask(element, []string{})
+				if err != nil {
+					return nil, err
+				}
+				fmt.Println("?", judgement)
+			}
+		} else {
 			break
 		}
-		score, err := strconv.Atoi(element.Task.Inputs)
-		if err != nil {
-			d.logger.Error("wrong score", zap.Error(err))
-			return nil, err
-		}
-		judgement, err := d.UpdateJudgement(element.JudgementId, score)
-		if err != nil {
-			return nil, err
-		}
-		err = d.scheduler.FinishTask(element, []string{})
-		if err != nil {
-			return nil, err
-		}
-		fmt.Println("?", judgement)
 	}
 
 	d.logger.Info("get task", zap.String("type", taskType))
@@ -180,13 +180,13 @@ func (d Service) ReserveTask(taskId string) (token string, err error) {
 	return token, nil
 }
 
-func (d Service) UpdateJudgement(judgementId string, score int) (*models.Judgement, error) {
+func (d Service) UpdateJudgement(judgementId string, score float64) (*models.Judgement, error) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
 
 	d.logger.Debug("update judgement",
 		zap.String("judgement id", judgementId),
-		zap.Int("score", score),
+		zap.Float64("score", score),
 	)
 
 	// get judgement with judgementId

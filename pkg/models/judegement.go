@@ -8,5 +8,5 @@ type Judgement struct {
 
 	JudgementId string
 	Status      JudgeStatus `sql:"type:judge_status"`
-	Score       int
+	Score       float64
 }
