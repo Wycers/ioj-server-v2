@@ -143,7 +143,7 @@ func (m *LocalFileManager) CreateFile(fileName string, bytes []byte) (err error)
 		if exist {
 			return errors.New("file or directory exists")
 		} else {
-			err = ioutil.WriteFile(filePath, bytes, os.FileMode(0644))
+			err = ioutil.WriteFile(filePath, bytes, os.FileMode(0755))
 		}
 	}
 	return
@@ -160,7 +160,7 @@ func (m *LocalFileManager) CreateDirectory(fileName string) (err error) {
 		if exist {
 			return errors.New("file or directory exists")
 		} else {
-			err = os.MkdirAll(filePath, os.FileMode(0644))
+			err = os.MkdirAll(filePath, os.FileMode(0755))
 		}
 	}
 	return
