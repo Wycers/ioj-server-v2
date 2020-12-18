@@ -1,34 +1,12 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 
-	cookiejar "github.com/juju/persistent-cookiejar"
+	"github.com/pkg/errors"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/spf13/viper"
 )
-
-// Options is log configuration struct
-type Options struct {
-	Url string `yaml:"url"`
-}
-
-var Jar, _ = cookiejar.New(nil)
-
-func NewOptions(v *viper.Viper) (*Options, error) {
-	var (
-		err error
-		o   = new(Options)
-	)
-
-	o.Url = fmt.Sprintf("%s/api/v1", v.Get("host").(string))
-
-	fmt.Printf("Host: %s\n", o.Url)
-
-	return o, err
-}
 
 type API interface {
 	SetHostUrl(hostUrl string)
@@ -70,6 +48,14 @@ func (a api) NewSubmissionAPI() SubmissionAPI {
 
 func New() API {
 	client := resty.New()
+
+	client.OnAfterResponse(func(c *resty.Client, resp *resty.Response) error {
+		if resp.StatusCode() == 401 {
+			return errors.New("You need to login")
+		}
+		return nil
+	})
+
 	return &api{
 		client: client,
 	}
