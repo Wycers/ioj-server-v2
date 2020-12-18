@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/infinity-oj/server-v2/pkg/nodeEngine"
+	"github.com/infinity-oj/server-v2/internal/lib/nodeEngine"
 
 	"go.uber.org/zap"
 
