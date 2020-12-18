@@ -5,7 +5,7 @@ import (
 	"github.com/infinity-oj/server-v2/pkg/models"
 )
 
-type SubmissionService interface {
+type SubmissionAPI interface {
 	Create(problemId, volume string) (*models.Submission, error)
 }
 
@@ -48,7 +48,7 @@ func (s *service) Create(problemId, volume string) (*models.Submission, error) {
 	return response.Submission, nil
 }
 
-func NewSubmissionService(client *resty.Client) SubmissionService {
+func NewSubmissionAPI(client *resty.Client) SubmissionAPI {
 	return &service{
 		client: client,
 	}

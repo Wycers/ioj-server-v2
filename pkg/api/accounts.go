@@ -8,17 +8,17 @@ import (
 	"github.com/infinity-oj/server-v2/pkg/models"
 )
 
-type AccountService interface {
+type AccountAPI interface {
 	Create(username, password, email string) (*models.Account, error)
 	Login(username, password string) error
 	Test() (*models.Account, error)
 }
 
-type accountService struct {
+type accountAPI struct {
 	client *resty.Client
 }
 
-func (s *accountService) Create(username, password, email string) (*models.Account, error) {
+func (s *accountAPI) Create(username, password, email string) (*models.Account, error) {
 
 	account := &models.Account{}
 
@@ -51,7 +51,7 @@ func (s *accountService) Create(username, password, email string) (*models.Accou
 	return account, nil
 }
 
-func (s *accountService) Login(username, password string) error {
+func (s *accountAPI) Login(username, password string) error {
 
 	request := map[string]interface{}{
 		"username": username,
@@ -83,7 +83,7 @@ func (s *accountService) Login(username, password string) error {
 	return err
 }
 
-func (s *accountService) Test() (*models.Account, error) {
+func (s *accountAPI) Test() (*models.Account, error) {
 
 	account := &models.Account{}
 
@@ -108,8 +108,8 @@ func (s *accountService) Test() (*models.Account, error) {
 	return account, err
 }
 
-func NewAccountService(client *resty.Client) AccountService {
-	return &accountService{
+func NewAccountAPI(client *resty.Client) AccountAPI {
+	return &accountAPI{
 		client: client,
 	}
 }

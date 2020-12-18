@@ -5,7 +5,7 @@ import (
 	"github.com/infinity-oj/server-v2/pkg/models"
 )
 
-type JudgementService interface {
+type JudgementAPI interface {
 	Create(problemId, volume string) (*models.Judgement, error)
 	Query() ([]*models.Judgement, error)
 }
@@ -58,7 +58,7 @@ func (s *judgementService) Create(problemId, volume string) (*models.Judgement, 
 	return response, nil
 }
 
-func NewJudgementService(client *resty.Client) JudgementService {
+func NewJudgementAPI(client *resty.Client) JudgementAPI {
 	return &judgementService{
 		client: client,
 	}

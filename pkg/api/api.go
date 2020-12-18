@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"net/http"
 
 	cookiejar "github.com/juju/persistent-cookiejar"
 
@@ -29,10 +30,47 @@ func NewOptions(v *viper.Viper) (*Options, error) {
 	return o, err
 }
 
-func NewClient(options *Options) *resty.Client {
-	client := resty.New()
+type API interface {
+	SetHostUrl(hostUrl string)
+	SetCookieJar(Jar http.CookieJar)
 
-	client.SetHostURL(options.Url)
-	client.SetCookieJar(Jar)
-	return client
+	NewAccountAPI() AccountAPI
+	NewVolumeAPI() VolumeAPI
+	NewJudgementAPI() JudgementAPI
+	NewSubmissionAPI() SubmissionAPI
+}
+
+type api struct {
+	client *resty.Client
+}
+
+func (a api) SetHostUrl(hostUrl string) {
+	a.client.SetHostURL(hostUrl)
+}
+
+func (a api) SetCookieJar(Jar http.CookieJar) {
+	a.client.SetCookieJar(Jar)
+}
+
+func (a api) NewAccountAPI() AccountAPI {
+	return NewAccountAPI(a.client)
+}
+
+func (a api) NewVolumeAPI() VolumeAPI {
+	return NewVolumeAPI(a.client)
+}
+
+func (a api) NewJudgementAPI() JudgementAPI {
+	return NewJudgementAPI(a.client)
+}
+
+func (a api) NewSubmissionAPI() SubmissionAPI {
+	return NewSubmissionAPI(a.client)
+}
+
+func New() API {
+	client := resty.New()
+	return &api{
+		client: client,
+	}
 }

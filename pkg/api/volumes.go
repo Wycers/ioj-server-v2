@@ -9,17 +9,17 @@ import (
 	"github.com/infinity-oj/server-v2/pkg/models"
 )
 
-type VolumeService interface {
+type VolumeAPI interface {
 	CreateVolume() (*models.Volume, error)
 	CreateDirectory(volume, directory string) error
 	CreateFile(volume, filename string, file []byte) error
 }
 
-type volumeService struct {
+type volumeAPI struct {
 	client *resty.Client
 }
 
-func (a *volumeService) CreateDirectory(volume, dirname string) error {
+func (a *volumeAPI) CreateDirectory(volume, dirname string) error {
 	_, err := a.client.R().
 		SetBody(map[string]string{
 			"dirname": dirname,
@@ -33,7 +33,7 @@ func (a *volumeService) CreateDirectory(volume, dirname string) error {
 	return nil
 }
 
-func (a *volumeService) CreateFile(volume, filename string, file []byte) error {
+func (a *volumeAPI) CreateFile(volume, filename string, file []byte) error {
 
 	fmt.Println(filename)
 
@@ -49,7 +49,7 @@ func (a *volumeService) CreateFile(volume, filename string, file []byte) error {
 	return nil
 }
 
-func (a *volumeService) CreateVolume() (*models.Volume, error) {
+func (a *volumeAPI) CreateVolume() (*models.Volume, error) {
 	volume := &models.Volume{}
 
 	_, err := a.client.R().
@@ -74,8 +74,8 @@ func (a *volumeService) CreateVolume() (*models.Volume, error) {
 	return volume, nil
 }
 
-func NewVolumeService(client *resty.Client) VolumeService {
-	return &volumeService{
+func NewVolumeAPI(client *resty.Client) VolumeAPI {
+	return &volumeAPI{
 		client: client,
 	}
 }
