@@ -1,8 +1,6 @@
 package api
 
 import (
-	"fmt"
-
 	"github.com/go-resty/resty/v2"
 
 	"github.com/infinity-oj/server-v2/pkg/models"
@@ -64,22 +62,6 @@ func (s *accountAPI) Login(username, password string) error {
 	if err != nil {
 		return err
 	}
-
-	// Explore response object
-	//fmt.Println("Response Info:")
-	//fmt.Println("  ", resp.Request.URL)
-	//fmt.Println("  Error      :", err)
-	//fmt.Println("  Status Code:", resp.StatusCode())
-	//fmt.Println("  Status     :", resp.Status())
-	//fmt.Println("  Proto      :", resp.Proto())
-	//fmt.Println("  Time       :", resp.Time())
-	//fmt.Println("  Received At:", resp.ReceivedAt())
-	//fmt.Println("  Body       :\n", resp)
-	//fmt.Println()
-	err = Jar.Save()
-	if err != nil {
-		fmt.Println(err)
-	}
 	return err
 }
 
@@ -94,17 +76,6 @@ func (s *accountAPI) Test() (*models.Account, error) {
 		return nil, err
 	}
 
-	// Explore response object
-	//fmt.Println("Response Info:")
-	//fmt.Println("  ", resp.Request.URL)
-	//fmt.Println("  Error      :", err)
-	//fmt.Println("  Status Code:", resp.StatusCode())
-	//fmt.Println("  Status     :", resp.Status())
-	//fmt.Println("  Proto      :", resp.Proto())
-	//fmt.Println("  Time       :", resp.Time())
-	//fmt.Println("  Received At:", resp.ReceivedAt())
-	//fmt.Println("  Body       :\n", resp)
-	//fmt.Println()
 	return account, err
 }
 
