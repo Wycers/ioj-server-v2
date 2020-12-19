@@ -27,7 +27,7 @@ type JudgementsService interface {
 	GetTasks(taskType string) (task []*models.Task, err error)
 	GetTask(taskId string) (task *models.Task, err error)
 	UpdateTask(taskId, outputs, warning, error string) (task *models.Task, err error)
-	ReserveTask(taskId string) (token string, err error)
+	ReserveTask(taskId string) (token string, locked bool, err error)
 }
 
 type Service struct {
@@ -43,7 +43,7 @@ func (d Service) GetTasks(taskType string) (tasks []*models.Task, err error) {
 	d.scheduler.List()
 
 	for {
-		if element := d.scheduler.FetchTask("*", "*", "basic/end"); element != nil {
+		if element := d.scheduler.FetchTask("*", "*", "basic/end", true); element != nil {
 			if score, err := strconv.ParseFloat(element.Task.Inputs, 64); err != nil {
 				d.logger.Error("wrong score", zap.Error(err))
 				return nil, err
@@ -64,10 +64,9 @@ func (d Service) GetTasks(taskType string) (tasks []*models.Task, err error) {
 	}
 
 	d.logger.Info("get task", zap.String("type", taskType))
-	element := d.scheduler.FetchTask("*", "*", taskType)
+	element := d.scheduler.FetchTask("*", "*", taskType, false)
 	if element != nil {
 		d.logger.Info("get tasks", zap.String("judgement id", element.JudgementId))
-		// TODO: use jwt
 		tasks = []*models.Task{
 			element.Task,
 		}
@@ -81,7 +80,7 @@ func (d Service) GetTask(taskId string) (task *models.Task, err error) {
 	d.logger.Info("get task",
 		zap.String("task id", taskId),
 	)
-	element := d.scheduler.FetchTask("*", taskId, "*")
+	element := d.scheduler.FetchTask("*", taskId, "*", true)
 	if element != nil {
 		d.logger.Info("get task",
 			zap.String("judgement id", element.JudgementId),
@@ -95,7 +94,7 @@ func (d Service) GetTask(taskId string) (task *models.Task, err error) {
 }
 
 func (d Service) UpdateTask(taskId, outputs, warning, error string) (task *models.Task, err error) {
-	taskElement := d.scheduler.FetchTask("*", taskId, "*")
+	taskElement := d.scheduler.FetchTask("*", taskId, "*", true)
 	if taskElement == nil {
 		d.logger.Debug("invalid token: no such task",
 			zap.String("task id", taskId),
@@ -149,15 +148,15 @@ func (d Service) UpdateTask(taskId, outputs, warning, error string) (task *model
 	return task, nil
 }
 
-func (d Service) ReserveTask(taskId string) (token string, err error) {
-	taskElement := d.scheduler.FetchTask("*", taskId, "*")
+func (d Service) ReserveTask(taskId string) (token string, locked bool, err error) {
+	taskElement := d.scheduler.FetchTask("*", taskId, "*", true)
 
 	if taskElement == nil {
-		return "", errors.New("not found")
+		return "", false, errors.New("not found")
 	}
 
 	if !d.scheduler.LockTask(taskElement) {
-		return "", errors.New("participated")
+		return "", false, errors.New("participated")
 	}
 
 	token = uuid.New().String()
@@ -166,7 +165,7 @@ func (d Service) ReserveTask(taskId string) (token string, err error) {
 		zap.String("token", token),
 	)
 
-	return token, nil
+	return token, true, nil
 }
 
 func (d Service) UpdateJudgement(judgementId string, status models.JudgeStatus, score float64, msg string) (*models.Judgement, error) {

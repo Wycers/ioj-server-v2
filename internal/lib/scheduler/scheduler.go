@@ -23,7 +23,7 @@ type Scheduler interface {
 	NewProcessRuntime(submission *models.Submission, judgement *models.Judgement, process *models.Process) error
 
 	PushTask(blockId int, task *models.Task)
-	FetchTask(judgementId, taskId, taskType string) *TaskElement
+	FetchTask(judgementId, taskId, taskType string, ignoreLock bool) *TaskElement
 	FinishTask(element *TaskElement, outputs []string) error
 	RemoveTask(element *TaskElement)
 	LockTask(element *TaskElement) bool
@@ -138,7 +138,7 @@ func (s scheduler) PushTask(blockId int, task *models.Task) {
 }
 
 // FetchTask returns task with specific task type.
-func (s scheduler) FetchTask(judgementId, taskId, taskType string) *TaskElement {
+func (s scheduler) FetchTask(judgementId, taskId, taskType string, ignoreLock bool) *TaskElement {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -160,6 +160,12 @@ func (s scheduler) FetchTask(judgementId, taskId, taskType string) *TaskElement 
 
 		if taskType != "*" && taskElement.Type != taskType {
 			continue
+		}
+
+		if taskElement.IsLocked {
+			if !ignoreLock {
+				continue
+			}
 		}
 
 		return taskElement

@@ -214,14 +214,19 @@ func (d *DefaultController) UpdateTask(c *gin.Context) {
 func (d *DefaultController) ReserveTask(c *gin.Context) {
 	taskId := c.Param("taskId")
 
-	d.logger.Debug("get task", zap.String("task taskId", taskId))
+	d.logger.Debug("reserve task", zap.String("task taskId", taskId))
 
-	token, err := d.service.ReserveTask(taskId)
-	if err != nil {
-		d.logger.Error("get task", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
+	token, locked, err := d.service.ReserveTask(taskId)
+	if !locked {
+		if err != nil {
+			d.logger.Error("reserve task failed", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": err.Error(),
+			})
+			return
+		}
+		d.logger.Error("reserve task failed: locked before")
+		c.Status(http.StatusPreconditionFailed)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{
