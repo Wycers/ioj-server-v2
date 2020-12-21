@@ -14,6 +14,7 @@ func CreateInitControllersFn(ac controllers.Controller) InitAccountGroupFn {
 	return func(r *gin.RouterGroup) {
 		r.GET("/account/:name", ac.GetAccount)
 		r.PUT("/account/:name", ac.UpdateAccount)
+		r.PUT("/account/:name/credential/application", ac.UpdateAccountCredential)
 		r.POST("/account/application", ac.CreateAccount)
 
 		r.GET("/session/principal", ac.GetPrincipal)

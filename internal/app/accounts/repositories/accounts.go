@@ -91,7 +91,7 @@ func (s *DefaultRepository) UpdateCredential(u *models.Credential) (err error) {
 
 func (s *DefaultRepository) QueryCredential(username string) (credential *models.Credential, err error) {
 	credential = &models.Credential{}
-	if err = s.db.Where(&models.Credential{Username: username}).First(credential).Error; err != nil {
+	if err = s.db.Where(&models.Credential{Username: username}).Last(credential).Error; err != nil {
 		if gorm.IsRecordNotFoundError(err) {
 			return nil, nil
 		} else {

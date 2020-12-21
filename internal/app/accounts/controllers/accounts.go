@@ -14,6 +14,7 @@ type Controller interface {
 	CreateAccount(c *gin.Context)
 	GetAccount(c *gin.Context)
 	UpdateAccount(c *gin.Context)
+	UpdateAccountCredential(c *gin.Context)
 
 	CreatePrincipal(c *gin.Context)
 	GetPrincipal(c *gin.Context)
@@ -85,6 +86,58 @@ func (d DefaultController) GetAccount(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, account)
+}
+
+func (d DefaultController) UpdateAccountCredential(c *gin.Context) {
+	name := c.Param("name")
+
+	account, err := d.service.GetAccount(name)
+	if err != nil {
+		d.logger.Error("get account", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+	if account == nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	request := struct {
+		OldPassword string `json:"oldPassword"  binding:"required,gte=6"`
+		NewPassword string `json:"newPassword"  binding:"required,gte=6"`
+	}{}
+
+	if err := c.ShouldBind(&request); err != nil {
+		errs, ok := err.(validator.ValidationErrors)
+		if !ok {
+			c.JSON(http.StatusOK, gin.H{
+				"msg": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg": errs.Error(),
+		})
+		return
+	}
+
+	d.logger.Debug("update account", zap.String("account name", name))
+	res, err := d.service.UpdateCredential(account.Name, request.OldPassword, request.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+
+	if res  {
+		c.Status(http.StatusNoContent)
+	} else {
+		c.AbortWithStatus(http.StatusUnauthorized)
+	}
 }
 
 func (d DefaultController) UpdateAccount(c *gin.Context) {

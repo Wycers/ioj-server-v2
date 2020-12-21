@@ -19,6 +19,7 @@ type Service interface {
 	UpdateAccount(account *models.Account, nickname, email, gender, locale string) (*models.Account, error)
 	CreateAccount(username, password, email string) (account *models.Account, err error)
 
+	UpdateCredential(username, oldPassword, newPassword string) (res bool, err error)
 	VerifyCredential(username, password string) (isValid bool, err error)
 
 	GetRoleById(accountId uint64) (roles []*models.Role, err error)
@@ -27,6 +28,28 @@ type Service interface {
 type DefaultService struct {
 	logger     *zap.Logger
 	Repository repositories.Repository
+}
+
+func (s *DefaultService) UpdateCredential(username, oldPassword, newPassword string) (res bool, err error) {
+	s.logger.Debug("verify credential", zap.String("username", username))
+	u := new(models.Credential)
+	if u, err = s.Repository.QueryCredential(username); err != nil {
+		s.logger.Error("verify credential error", zap.Error(err))
+		return false, err
+	}
+	if u == nil {
+		return false, nil
+	}
+	hash := crypto.Sha256(u.Salt + oldPassword + specialKey)
+
+	if hash != u.Hash {
+		return false, nil
+	}
+
+	u.Salt = random.RandStringRunes(64)
+	u.Hash = crypto.Sha256(u.Salt + newPassword + specialKey)
+
+	return true, nil
 }
 
 func (s *DefaultService) GetAccount(name string) (account *models.Account, err error) {

@@ -1,7 +1,10 @@
 package api
 
 import (
+	"fmt"
 	"github.com/go-resty/resty/v2"
+	"github.com/pkg/errors"
+	"net/http"
 
 	"github.com/infinity-oj/server-v2/pkg/models"
 )
@@ -9,11 +12,33 @@ import (
 type AccountAPI interface {
 	Create(username, password, email string) (*models.Account, error)
 	Login(username, password string) error
+	ResetCredential(username, oldPassword, newPassword string) error
 	Test() (*models.Account, error)
 }
 
 type accountAPI struct {
 	client *resty.Client
+}
+
+func (s *accountAPI) ResetCredential(username, oldPassword, newPassword string) error {
+
+	request := map[string]interface{}{
+		"username":    username,
+		"oldPassword": oldPassword,
+		"newPassword": newPassword,
+	}
+
+	resp, err := s.client.R().
+		SetBody(request).
+		Post(fmt.Sprintf("/account/%s/credential/application", username))
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode() == http.StatusNoContent {
+		return nil
+	} else {
+		return errors.New("reset password failed")
+	}
 }
 
 func (s *accountAPI) Create(username, password, email string) (*models.Account, error) {
