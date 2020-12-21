@@ -7,14 +7,29 @@ import (
 
 type JudgementAPI interface {
 	Create(problemId, volume string) (*models.Judgement, error)
-	Query() ([]*models.Judgement, error)
+	QueryJudgements() ([]*models.Judgement, error)
+	QueryJudgement(judgementId string) (*models.Judgement, error)
 }
 
 type judgementService struct {
 	client *resty.Client
 }
 
-func (s *judgementService) Query() ([]*models.Judgement, error) {
+func (s *judgementService) QueryJudgement(judgementId string) (*models.Judgement, error) {
+
+	response := &models.Judgement{}
+
+	_, err := s.client.R().
+		SetResult(response).
+		Get("/judgement/" + judgementId)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (s *judgementService) QueryJudgements() ([]*models.Judgement, error) {
 	var response []*models.Judgement
 
 	_, err := s.client.R().
