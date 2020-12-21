@@ -198,6 +198,17 @@ func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (*mo
 		zap.Uint64("submission id", submissionId),
 	)
 
+	judgements, err := d.Repository.GetJudgementsByAccountId(accountId)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, judgement := range judgements {
+		if judgement.Status == models.Accepted {
+			return nil, errors.New("previous judgement accepted")
+		}
+	}
+
 	// get process
 	process, err := d.processRepository.GetProcess(processId)
 	if err != nil {
