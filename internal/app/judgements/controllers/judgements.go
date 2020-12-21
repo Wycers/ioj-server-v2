@@ -99,7 +99,26 @@ func (d *DefaultController) GetJudgements(c *gin.Context) {
 }
 
 func (d *DefaultController) GetJudgement(c *gin.Context) {
-	c.AbortWithStatus(http.StatusNotImplemented)
+	d.logger.Debug("get judgement")
+	session := sessions.GetSession(c)
+	if session == nil {
+		d.logger.Debug("get principal failed")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	judgementId := c.Param("judgementId")
+	d.logger.Debug("get judgement", zap.String("judgement id", judgementId))
+
+	judgement, err := d.service.GetJudgement(judgementId)
+	if err != nil {
+		d.logger.Error("create judgement", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(200, judgement)
 }
 
 func (d *DefaultController) GetTasks(c *gin.Context) {
