@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -205,8 +206,18 @@ func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (*mo
 
 	for _, judgement := range judgements {
 		if judgement.Status == models.Accepted {
-			return nil, errors.New("previous judgement accepted")
+			now := time.Now()
+			judgeTime := judgement.CreatedAt
+			dateEquals := func(a time.Time, b time.Time) bool {
+				y1, m1, d1 := a.Date()
+				y2, m2, d2 := b.Date()
+				return y1 == y2 && m1 == m2 && d1 == d2
+			}
+			if dateEquals(judgeTime, now) {
+				return nil, errors.New("previous judgement accepted today")
+			}
 		}
+
 	}
 
 	// get process

@@ -43,7 +43,6 @@ func (m repository) GetJudgementsByAccountId(accountId uint64) (judgements []*mo
 		Joins("left join submissions on judgements.submission_id = submissions.id").
 		Where("submissions.submitter_id = ?", accountId).
 		Order("judgements.id desc").
-		Limit(5).
 		Scan(&result).
 		Error; err != nil {
 		fmt.Println(judgements)
