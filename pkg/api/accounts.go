@@ -30,7 +30,7 @@ func (s *accountAPI) ResetCredential(username, oldPassword, newPassword string) 
 
 	resp, err := s.client.R().
 		SetBody(request).
-		Post(fmt.Sprintf("/account/%s/credential/application", username))
+		Put(fmt.Sprintf("/account/%s/credential/application", username))
 	if err != nil {
 		return err
 	}
