@@ -3,6 +3,8 @@ package controllers
 import (
 	"net/http"
 
+	"github.com/infinity-oj/server-v2/pkg/models"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/infinity-oj/server-v2/internal/pkg/sessions"
 
@@ -15,6 +17,7 @@ type Controller interface {
 	CreateJudgement(c *gin.Context)
 	GetJudgements(c *gin.Context)
 	GetJudgement(c *gin.Context)
+	CancelJudgement(c *gin.Context)
 
 	GetTasks(c *gin.Context)
 	GetTask(c *gin.Context)
@@ -25,6 +28,50 @@ type Controller interface {
 type DefaultController struct {
 	logger  *zap.Logger
 	service services.JudgementsService
+}
+
+func (d *DefaultController) CancelJudgement(c *gin.Context) {
+	d.logger.Debug("cancel judgement")
+	session := sessions.GetSession(c)
+	if session == nil {
+		d.logger.Debug("get principal failed")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	judgementId := c.Param("judgementId")
+
+	d.logger.Debug("cancel judgement",
+		zap.Uint64("account id", session.AccountId),
+		zap.String("judgement id", judgementId),
+	)
+
+	judgement, err := d.service.GetJudgement(judgementId)
+	if err != nil {
+		d.logger.Error("cancel judgement", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+
+	if judgement == nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	if judgement.Status != models.Pending {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+	judgement, err = d.service.UpdateJudgement(judgementId, models.Canceled, -1, "User cancel")
+	if err != nil {
+		d.logger.Error("create judgement", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
+		})
+		return
+	}
+	c.JSON(200, judgement)
 }
 
 func (d *DefaultController) CreateJudgement(c *gin.Context) {

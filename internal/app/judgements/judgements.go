@@ -16,6 +16,7 @@ func CreateInitControllersFn(jc controllers.Controller) InitJudgementGroupFn {
 		judgementGroup.GET("/", jc.GetJudgements)
 		judgementGroup.POST("/", jc.CreateJudgement)
 		judgementGroup.GET("/:judgementId", jc.GetJudgement)
+		judgementGroup.POST("/:judgementId/cancel", jc.CancelJudgement)
 
 		taskGroup := r.Group("/task")
 		taskGroup.GET("/", jc.GetTasks)
