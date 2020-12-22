@@ -205,7 +205,7 @@ func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (*mo
 	}
 
 	for _, judgement := range judgements {
-		if judgement.Status == models.Accepted {
+		if judgement.Status == models.Accepted || judgement.Status == models.Pending {
 			now := time.Now()
 			judgeTime := judgement.CreatedAt
 			dateEquals := func(a time.Time, b time.Time) bool {
