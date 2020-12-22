@@ -55,12 +55,16 @@ func (d *DefaultController) CreateSubmission(c *gin.Context) {
 		zap.String("user space", request.UserSpace),
 	)
 
-	submission, judgement, err := d.service.Create(session.AccountId, request.ProblemId, request.UserSpace)
+	code, submission, judgement, err := d.service.Create(session.AccountId, request.ProblemId, request.UserSpace)
 	if err != nil {
 		d.logger.Error("create submission", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"msg": err.Error(),
 		})
+		return
+	}
+	if code != http.StatusOK {
+		c.AbortWithStatus(code)
 		return
 	}
 	c.JSON(200, &gin.H{

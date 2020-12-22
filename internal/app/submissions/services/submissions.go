@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"net/http"
 
 	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
 
@@ -14,7 +15,7 @@ import (
 )
 
 type SubmissionsService interface {
-	Create(submitterID uint64, problemName string, userSpace string) (s *models.Submission, j *models.Judgement, err error)
+	Create(submitterID uint64, problemName string, userSpace string) (code int, s *models.Submission, j *models.Judgement, err error)
 	GetSubmission(submissionId string) (s *models.Submission, err error)
 	GetSubmissions(problemId string, page, pageSize int) (res []*models.Submission, err error)
 }
@@ -47,7 +48,7 @@ func (d DefaultSubmissionService) GetSubmission(submissionId string) (s *models.
 	return
 }
 
-func (d DefaultSubmissionService) Create(submitterID uint64, problemName, userSpace string) (s *models.Submission, j *models.Judgement, err error) {
+func (d DefaultSubmissionService) Create(submitterID uint64, problemName, userSpace string) (code int, s *models.Submission, j *models.Judgement, err error) {
 	d.logger.Debug("create submission",
 		zap.Uint64("submitter Id", submitterID),
 		zap.String("problem name", problemName),
@@ -56,11 +57,11 @@ func (d DefaultSubmissionService) Create(submitterID uint64, problemName, userSp
 	problem, err := d.ProblemRepository.GetProblemByName(problemName)
 	if err != nil {
 		d.logger.Error("create submission", zap.Error(err))
-		return nil, nil, err
+		return http.StatusInternalServerError, nil, nil, err
 	}
 	if problem == nil {
 		d.logger.Error("create submission: unknown problem")
-		return nil, nil, errors.New("unknown problem")
+		return http.StatusInternalServerError, nil, nil, errors.New("unknown problem")
 	}
 	d.logger.Debug("create submission",
 		zap.Uint64("submitter Id", submitterID),
@@ -70,10 +71,10 @@ func (d DefaultSubmissionService) Create(submitterID uint64, problemName, userSp
 	s, err = d.SubmissionRepository.Create(submitterID, problem.ID, userSpace)
 	if err != nil {
 		d.logger.Error("create submission", zap.Error(err))
-		return nil, nil, err
+		return http.StatusInternalServerError, nil, nil, err
 	}
-
-	j, err = d.JudgementService.CreateJudgement(submitterID, problem.ProcessId, s.ID)
+	code = http.StatusOK
+	code, j, err = d.JudgementService.CreateJudgement(submitterID, problem.ProcessId, s.ID)
 	return
 }
 

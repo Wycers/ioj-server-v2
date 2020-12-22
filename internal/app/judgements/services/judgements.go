@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -22,7 +23,7 @@ import (
 type JudgementsService interface {
 	GetJudgement(judgementId string) (*models.Judgement, error)
 	GetJudgements(accountId uint64) ([]*models.Judgement, error)
-	CreateJudgement(accountId, processId, submissionId uint64) (*models.Judgement, error)
+	CreateJudgement(accountId, processId, submissionId uint64) (int, *models.Judgement, error)
 	UpdateJudgement(judgementId string, status models.JudgeStatus, score float64, msg string) (*models.Judgement, error)
 
 	GetTasks(taskType string) (task []*models.Task, err error)
@@ -192,7 +193,7 @@ func (d Service) UpdateJudgement(judgementId string, status models.JudgeStatus, 
 	return judgement, err
 }
 
-func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (*models.Judgement, error) {
+func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (int, *models.Judgement, error) {
 	d.logger.Debug("create judgement",
 		zap.Uint64("account id", accountId),
 		zap.Uint64("process id", processId),
@@ -201,7 +202,7 @@ func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (*mo
 
 	judgements, err := d.Repository.GetJudgementsByAccountId(accountId)
 	if err != nil {
-		return nil, err
+		return http.StatusInternalServerError, nil, err
 	}
 
 	for _, judgement := range judgements {
@@ -214,7 +215,7 @@ func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (*mo
 				return y1 == y2 && m1 == m2 && d1 == d2
 			}
 			if dateEquals(judgeTime, now) {
-				return nil, errors.New("previous judgement accepted today")
+				return http.StatusForbidden, nil, errors.New("previous judgement accepted today")
 			}
 		}
 
@@ -227,10 +228,10 @@ func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (*mo
 			zap.Uint64("process id", processId),
 			zap.Error(err),
 		)
-		return nil, err
+		return http.StatusInternalServerError, nil, err
 	}
 	if process == nil {
-		return nil, errors.New("invalid request")
+		return http.StatusInternalServerError, nil, errors.New("invalid request")
 	}
 	d.logger.Debug("create judgement",
 		zap.String("process definition", process.Definition),
@@ -243,10 +244,10 @@ func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (*mo
 			zap.Uint64("submission id", submissionId),
 			zap.Error(err),
 		)
-		return nil, err
+		return http.StatusInternalServerError, nil, err
 	}
 	if submission == nil {
-		return nil, errors.New("invalid request")
+		return http.StatusBadRequest, nil, errors.New("invalid request")
 	}
 	d.logger.Debug("create judgement",
 		zap.String("submission user space", submission.UserVolume),
@@ -260,13 +261,13 @@ func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (*mo
 			zap.Uint64("process id", processId),
 			zap.Error(err),
 		)
-		return nil, err
+		return http.StatusInternalServerError, nil, err
 	}
 	d.logger.Debug("create judgement successfully")
 
 	err = d.scheduler.NewProcessRuntime(submission, judgement, process)
 
-	return judgement, err
+	return http.StatusOK, judgement, err
 }
 
 func (d Service) GetJudgement(judgementId string) (*models.Judgement, error) {

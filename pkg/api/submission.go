@@ -6,14 +6,14 @@ import (
 )
 
 type SubmissionAPI interface {
-	Create(problemId, volume string) (*models.Submission, error)
+	Create(problemId, volume string) (int, *models.Submission, error)
 }
 
 type service struct {
 	client *resty.Client
 }
 
-func (s *service) Create(problemId, volume string) (*models.Submission, error) {
+func (s *service) Create(problemId, volume string) (int, *models.Submission, error) {
 
 	request := map[string]interface{}{
 		"problemId": problemId,
@@ -25,27 +25,15 @@ func (s *service) Create(problemId, volume string) (*models.Submission, error) {
 		Judgement  *models.Judgement  `json:"judgement"`
 	}{}
 
-	_, err := s.client.R().
+	resp, err := s.client.R().
 		SetBody(request).
 		SetResult(response).
 		Post("/submission")
 	if err != nil {
-		return nil, err
+		return 0, nil, err
 	}
 
-	//Explore response object
-	//fmt.Println("Response Info:")
-	//fmt.Println("  ", resp.Request.URL)
-	//fmt.Println("  Error      :", err)
-	//fmt.Println("  Status Code:", resp.StatusCode())
-	//fmt.Println("  Status     :", resp.Status())
-	//fmt.Println("  Proto      :", resp.Proto())
-	//fmt.Println("  Time       :", resp.Time())
-	//fmt.Println("  Received At:", resp.ReceivedAt())
-	//fmt.Println("  Body       :\n", resp)
-	//fmt.Println()
-
-	return response.Submission, nil
+	return resp.StatusCode(), response.Submission, nil
 }
 
 func NewSubmissionAPI(client *resty.Client) SubmissionAPI {
