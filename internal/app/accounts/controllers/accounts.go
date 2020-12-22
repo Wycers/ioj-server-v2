@@ -36,6 +36,9 @@ func New(logger *zap.Logger, s services.Service) Controller {
 }
 
 func (d DefaultController) CreateAccount(c *gin.Context) {
+	c.AbortWithStatus(http.StatusForbidden)
+	return
+
 	request := struct {
 		Username string `json:"username" binding:"required,gte=6"`
 		Password string `json:"password" binding:"required,gte=6"`
