@@ -35,8 +35,6 @@ func (a *volumeAPI) CreateDirectory(volume, dirname string) error {
 
 func (a *volumeAPI) CreateFile(volume, filename string, file []byte) error {
 
-	fmt.Println(filename)
-
 	_, err := a.client.R().
 		SetFileReader(
 			"file", filename, bytes.NewReader(file)).
