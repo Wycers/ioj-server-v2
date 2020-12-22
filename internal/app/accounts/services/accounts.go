@@ -49,6 +49,10 @@ func (s *DefaultService) UpdateCredential(username, oldPassword, newPassword str
 	u.Salt = random.RandStringRunes(64)
 	u.Hash = crypto.Sha256(u.Salt + newPassword + specialKey)
 
+	if err := s.Repository.UpdateCredential(u); err != nil {
+		return false, err
+	}
+
 	return true, nil
 }
 
