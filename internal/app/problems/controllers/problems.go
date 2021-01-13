@@ -149,6 +149,9 @@ func (pc *DefaultController) UpdateProblem(c *gin.Context) {
 
 	request := struct {
 		Title string `json:"title" binding:"required,gt=0"`
+
+		PublicVolume  string `json:"publicVolume" binding:"required,gt=0"`
+		PrivateVolume string `json:"privateVolume" binding:"required,gt=0"`
 	}{}
 
 	if err := c.ShouldBind(&request); err != nil {
@@ -166,7 +169,7 @@ func (pc *DefaultController) UpdateProblem(c *gin.Context) {
 		return
 	}
 
-	problem, err = pc.service.UpdateProblem(problem, name, request.Title)
+	problem, err = pc.service.UpdateProblem(problem, name, request.Title, request.PublicVolume, request.PrivateVolume)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, &gin.H{
 			"message": err.Error(),

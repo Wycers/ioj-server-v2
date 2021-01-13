@@ -8,7 +8,7 @@ import (
 
 type ProblemsService interface {
 	CreateProblem(name, title string) (p *models.Problem, err error)
-	UpdateProblem(p *models.Problem, name string, title string) (*models.Problem, error)
+	UpdateProblem(p *models.Problem, name, title, publicVolume, privateVolume string) (*models.Problem, error)
 	GetProblemById(id uint64) (p *models.Problem, err error)
 	GetProblemByName(name string) (p *models.Problem, err error)
 	GetProblems(page, pageSize int) (res []*models.Problem, err error)
@@ -24,9 +24,11 @@ func (s DefaultProblemService) GetProblemById(id uint64) (p *models.Problem, err
 	return
 }
 
-func (s DefaultProblemService) UpdateProblem(p *models.Problem, name string, title string) (*models.Problem, error) {
+func (s DefaultProblemService) UpdateProblem(p *models.Problem, name, title, publicVolume, privateVolume string) (*models.Problem, error) {
 	p.Name = name
 	p.Title = title
+	p.PublicVolume = publicVolume
+	p.PrivateVolume = privateVolume
 	if err := s.Repository.UpdateProblem(p); err != nil {
 		s.logger.Error("update problem",
 			zap.String("name", p.Name),
@@ -63,7 +65,7 @@ func (s DefaultProblemService) CreateProblem(name, title string) (p *models.Prob
 
 func NewProblemService(logger *zap.Logger, Repository repositories.Repository) ProblemsService {
 	return &DefaultProblemService{
-		logger:     logger.With(zap.String("type", "DefaultProblemService")),
+		logger:     logger.With(zap.String("type", "ProblemService")),
 		Repository: Repository,
 	}
 }
