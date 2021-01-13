@@ -36,9 +36,6 @@ func New(logger *zap.Logger, s services.Service) Controller {
 }
 
 func (d DefaultController) CreateAccount(c *gin.Context) {
-	c.AbortWithStatus(http.StatusForbidden)
-	return
-
 	request := struct {
 		Username string `json:"username" binding:"required,gte=6"`
 		Password string `json:"password" binding:"required,gte=6"`
@@ -136,7 +133,7 @@ func (d DefaultController) UpdateAccountCredential(c *gin.Context) {
 		return
 	}
 
-	if res  {
+	if res {
 		c.Status(http.StatusNoContent)
 	} else {
 		c.AbortWithStatus(http.StatusUnauthorized)
@@ -311,5 +308,4 @@ func (d DefaultController) GetRole(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"roles": session.Roles,
 	})
-
 }
