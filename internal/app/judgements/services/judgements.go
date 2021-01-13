@@ -218,7 +218,6 @@ func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (int
 				return http.StatusForbidden, nil, errors.New("previous judgement accepted today")
 			}
 		}
-
 	}
 
 	// get process

@@ -109,10 +109,10 @@ func (d *DefaultController) CreateJudgement(c *gin.Context) {
 		zap.Uint64("submission id", request.SubmissionId),
 	)
 
-	judgement, err := d.service.CreateJudgement(session.AccountId, request.ProcessId, request.SubmissionId)
+	code, judgement, err := d.service.CreateJudgement(session.AccountId, request.ProcessId, request.SubmissionId)
 	if err != nil {
 		d.logger.Error("create judgement", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(code, gin.H{
 			"msg": err.Error(),
 		})
 		return
@@ -120,7 +120,7 @@ func (d *DefaultController) CreateJudgement(c *gin.Context) {
 	d.logger.Debug("create judgement",
 		zap.String("new judgement id", judgement.JudgementId),
 	)
-	c.JSON(200, judgement)
+	c.JSON(http.StatusOK, judgement)
 }
 
 func (d *DefaultController) GetJudgements(c *gin.Context) {
