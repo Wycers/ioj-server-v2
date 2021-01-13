@@ -50,6 +50,8 @@ func New(o *Options) (*gorm.DB, error) {
 		&models.Submission{},
 		&models.Process{},
 		&models.Role{},
+		&models.Group{},
+		&models.UserGroupCorrelation{},
 	)
 
 	return db, nil
