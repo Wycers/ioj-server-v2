@@ -22,3 +22,5 @@ logs
 
 # dist file
 dist
+
+.vscode
