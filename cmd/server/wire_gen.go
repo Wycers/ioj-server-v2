@@ -32,6 +32,7 @@ import (
 	controllers6 "github.com/infinity-oj/server-v2/internal/app/volumes/controllers"
 	repositories6 "github.com/infinity-oj/server-v2/internal/app/volumes/repositories"
 	services6 "github.com/infinity-oj/server-v2/internal/app/volumes/services"
+	"github.com/infinity-oj/server-v2/internal/app/volumes/storages"
 	"github.com/infinity-oj/server-v2/internal/pkg/config"
 	"github.com/infinity-oj/server-v2/internal/pkg/database"
 	"github.com/infinity-oj/server-v2/internal/pkg/files"
@@ -99,8 +100,9 @@ func CreateApp(cf string) (*server.Application, error) {
 	if err != nil {
 		return nil, err
 	}
-	repository5 := repositories6.NewFileManager(logger, fileManager)
-	servicesService := services6.NewVolumeService(logger, repository5)
+	storage := storages.NewFileManager(logger, fileManager)
+	repository5 := repositories6.NewRepository(logger, db)
+	servicesService := services6.NewVolumeService(logger, storage, repository5)
 	controller5 := controllers6.New(logger, servicesService)
 	initVolumnGroupFn := volumes.CreateInitControllersFn(controller5)
 	initControllers := server.CreateInitControllersFn(initProblemGroupFn, initSubmissionGroupFn, initJudgementGroupFn, initAccountGroupFn, initProcessGroupFn, initVolumnGroupFn)

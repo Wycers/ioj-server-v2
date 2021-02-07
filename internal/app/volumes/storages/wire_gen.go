@@ -3,18 +3,19 @@
 //go:generate wire
 //+build !wireinject
 
-package repositories
+package storages
 
 import (
 	"github.com/google/wire"
 	"github.com/infinity-oj/server-v2/internal/pkg/config"
 	"github.com/infinity-oj/server-v2/internal/pkg/database"
+	"github.com/infinity-oj/server-v2/internal/pkg/files"
 	"github.com/infinity-oj/server-v2/internal/pkg/log"
 )
 
 // Injectors from wire.go:
 
-func CreateFileRepository(f string) (Repository, error) {
+func CreateFileRepository(f string) (Storage, error) {
 	viper, err := config.New(f)
 	if err != nil {
 		return nil, err
@@ -27,18 +28,18 @@ func CreateFileRepository(f string) (Repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	databaseOptions, err := database.NewOptions(viper, logger)
+	filesOptions, err := files.NewOptions(viper, logger)
 	if err != nil {
 		return nil, err
 	}
-	db, err := database.New(databaseOptions)
+	fileManager, err := files.New(filesOptions)
 	if err != nil {
 		return nil, err
 	}
-	repositoriesRepository := NewRepository(logger, db)
-	return repositoriesRepository, nil
+	storage := NewFileManager(logger, fileManager)
+	return storage, nil
 }
 
 // wire.go:
 
-var testProviderSet = wire.NewSet(log.ProviderSet, config.ProviderSet, database.ProviderSet, ProviderSet)
+var testProviderSet = wire.NewSet(log.ProviderSet, config.ProviderSet, database.ProviderSet, files.ProviderSet, ProviderSet)

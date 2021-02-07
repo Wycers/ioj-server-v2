@@ -8,6 +8,7 @@ package services
 import (
 	"github.com/google/wire"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/repositories"
+	"github.com/infinity-oj/server-v2/internal/app/volumes/storages"
 	"github.com/infinity-oj/server-v2/internal/pkg/config"
 	"github.com/infinity-oj/server-v2/internal/pkg/database"
 	"github.com/infinity-oj/server-v2/internal/pkg/log"
@@ -15,7 +16,7 @@ import (
 
 // Injectors from wire.go:
 
-func CreateVolumesService(cf string, sto repositories.Repository) (Service, error) {
+func CreateVolumesService(cf string, sto storages.Storage, repository repositories.Repository) (Service, error) {
 	viper, err := config.New(cf)
 	if err != nil {
 		return nil, err
@@ -28,7 +29,7 @@ func CreateVolumesService(cf string, sto repositories.Repository) (Service, erro
 	if err != nil {
 		return nil, err
 	}
-	service := NewVolumeService(logger, sto)
+	service := NewVolumeService(logger, sto, repository)
 	return service, nil
 }
 

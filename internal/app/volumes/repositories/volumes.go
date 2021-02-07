@@ -1,59 +1,69 @@
 package repositories
 
 import (
-	"os"
-	"path"
-
-	"github.com/infinity-oj/server-v2/internal/pkg/files"
+	"github.com/infinity-oj/server-v2/pkg/models"
+	"github.com/jinzhu/gorm"
 	"go.uber.org/zap"
 )
 
 type Repository interface {
-	CreateDirectory(volume, directory string) error
-	CreateFile(volume, fileName string, data []byte) error
-	IsFileExists(volume, fileName string) bool
-	FetchFile(volume, fileName string) ([]byte, error)
-
-	ArchiveDirectory(volume, directory string) (file *os.File, err error)
+	CreateVolume(baseVolume *models.Volume, accountId uint64, volumeName string) (*models.Volume, error)
+	UpdateVolume(volume *models.Volume) (*models.Volume, error)
+	GetVolume(volumeName string) (*models.Volume, error)
+	GetVolumeByID(volumeID uint64) (*models.Volume, error)
 }
 
-type FileManager struct {
+type repository struct {
 	logger *zap.Logger
-	fm     files.FileManager
+	db     *gorm.DB
 }
 
-func (m *FileManager) ArchiveDirectory(volume, directory string) (file *os.File, err error) {
-	filePath := path.Join(volume, directory)
-	return m.fm.ArchiveDirectory(filePath)
-}
-
-func (m *FileManager) IsFileExists(volume, fileName string) bool {
-	filePath := path.Join(volume, fileName)
-	exist, err := m.fm.IsFileExists(filePath)
-	if err != nil {
-		return false
+func (r repository) UpdateVolume(volume *models.Volume) (*models.Volume, error) {
+	if err := r.db.Save(&volume).Error; err != nil {
+		return nil, err
 	}
-	return exist
+	return volume, nil
 }
 
-func (m *FileManager) FetchFile(volume, fileName string) ([]byte, error) {
-	filePath := path.Join(volume, fileName)
-	return m.fm.FetchFile(filePath)
+func (r repository) GetVolumeByID(volumeID uint64) (*models.Volume, error) {
+	var volume *models.Volume
+	if err := r.db.Where("id = ?", volumeID).Limit(1).Find(volume).Error; err != nil {
+		return nil, err
+	}
+	return volume, nil
 }
 
-func (m *FileManager) CreateDirectory(volume, directory string) error {
-	filePath := path.Join(volume, directory)
-	return m.fm.CreateDirectory(filePath)
+func (r repository) GetVolume(volumeName string) (*models.Volume, error) {
+	volume := &models.Volume{}
+	if err := r.db.Where("name = ?", volumeName).Limit(1).Find(volume).Error; err != nil {
+		return nil, err
+	}
+	return volume, nil
 }
 
-func (m *FileManager) CreateFile(volume, fileName string, data []byte) error {
-	filePath := path.Join(volume, fileName)
-	return m.fm.CreateFile(filePath, data)
+func (r repository) CreateVolume(baseVolume *models.Volume, accountId uint64, volumeName string) (*models.Volume, error) {
+	var baseVolumeID uint64 = 0
+	if baseVolume != nil {
+		baseVolumeID = baseVolume.ID
+	}
+	volume := &models.Volume{
+		Base:        baseVolumeID,
+		CreatedBy:   accountId,
+		Name:        volumeName,
+		FileRecords: &models.FileRecords{},
+	}
+
+	if err := r.db.Create(volume).Error; err != nil {
+		r.logger.Error("create volume", zap.String("name", volumeName), zap.Error(err))
+		return nil, err
+	}
+
+	return volume, nil
 }
 
-func NewFileManager(logger *zap.Logger, fm files.FileManager) Repository {
-	return &FileManager{
+func NewRepository(logger *zap.Logger, db *gorm.DB) Repository {
+	return &repository{
 		logger: logger.With(zap.String("type", "Repository")),
-		fm:     fm,
+		db:     db,
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/volumes/controllers"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/services"
+	"github.com/infinity-oj/server-v2/internal/app/volumes/storages"
 )
 
 type InitVolumnGroupFn func(r *gin.RouterGroup)
@@ -28,5 +29,6 @@ func CreateInitControllersFn(vc controllers.Controller) InitVolumnGroupFn {
 var ProviderSet = wire.NewSet(CreateInitControllersFn,
 	controllers.ProviderSet,
 	services.ProviderSet,
+	storages.ProviderSet,
 	repositories.ProviderSet,
 )

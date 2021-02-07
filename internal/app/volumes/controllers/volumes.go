@@ -47,7 +47,7 @@ func (d DefaultController) CreateFile(c *gin.Context) {
 		zap.String("filename", formFile.Filename),
 	)
 
-	volume := c.Param("name")
+	volumeName := c.Param("name")
 
 	file, err := formFile.Open()
 	if err != nil {
@@ -55,7 +55,7 @@ func (d DefaultController) CreateFile(c *gin.Context) {
 		return
 	}
 	fileData, _ := ioutil.ReadAll(file)
-	err = d.service.CreateFile(volume, formFile.Filename, fileData)
+	_, err = d.service.CreateFile(volumeName, formFile.Filename, fileData)
 	if err != nil {
 		d.logger.Error("create file failed", zap.Error(err))
 		return
@@ -93,7 +93,7 @@ func (d DefaultController) CreateDirectory(c *gin.Context) {
 
 	volume := c.Param("name")
 
-	err := d.service.CreateDirectory(volume, request.Dirname)
+	_, err := d.service.CreateDirectory(volume, request.Dirname)
 	if err != nil {
 		d.logger.Error("create volume failed")
 		return
@@ -110,7 +110,7 @@ func (d DefaultController) CreateVolume(c *gin.Context) {
 		return
 	}
 
-	volume, err := d.service.CreateVolume()
+	volume, err := d.service.CreateVolume(session.AccountId)
 	if err != nil {
 		d.logger.Error("create volume failed")
 		return
