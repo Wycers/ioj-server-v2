@@ -15,6 +15,35 @@ type LocalFileManager struct {
 	base string
 }
 
+func (m *LocalFileManager) FetchFileInfo(fileName string) (os.FileInfo, error) {
+	filePath, err := GetFileAbsPath(m.base, fileName)
+	if err != nil {
+		return nil, err
+	}
+	return os.Stat(filePath)
+}
+
+func (m *LocalFileManager) FetchFile(fileName string) ([]byte, error) {
+	filePath, err := GetFileAbsPath(m.base, fileName)
+	if err != nil {
+		return nil, err
+	}
+	if exist, err := m.IsFileExists(filePath); err != nil {
+		return nil, err
+	} else {
+		if exist {
+
+			dat, err := ioutil.ReadFile(filePath)
+			if err != nil {
+				return nil, err
+			}
+			return dat, nil
+		} else {
+			return nil, errors.New("file or directory does not exist")
+		}
+	}
+}
+
 func (m *LocalFileManager) ArchiveDirectory(fileName string) (file *os.File, err error) {
 
 	source, err := GetFileAbsPath(m.base, fileName)
@@ -42,7 +71,7 @@ func (m *LocalFileManager) ArchiveDirectory(fileName string) (file *os.File, err
 		baseDir = filepath.Base(source)
 	}
 
-	filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(source, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -83,7 +112,7 @@ func (m *LocalFileManager) ArchiveDirectory(fileName string) (file *os.File, err
 	return zipfile, err
 }
 
-func (m *LocalFileManager) FetchFile(fileName string) ([]byte, error) {
+func (m *LocalFileManager) FetchFileBytes(fileName string) ([]byte, error) {
 	filePath, err := GetFileAbsPath(m.base, fileName)
 	if err != nil {
 		return nil, err

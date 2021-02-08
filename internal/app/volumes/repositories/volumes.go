@@ -26,7 +26,7 @@ func (r repository) UpdateVolume(volume *models.Volume) (*models.Volume, error) 
 }
 
 func (r repository) GetVolumeByID(volumeID uint64) (*models.Volume, error) {
-	var volume *models.Volume
+	volume := &models.Volume{}
 	if err := r.db.Where("id = ?", volumeID).Limit(1).Find(volume).Error; err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (r repository) CreateVolume(baseVolume *models.Volume, accountId uint64, vo
 		Base:        baseVolumeID,
 		CreatedBy:   accountId,
 		Name:        volumeName,
-		FileRecords: &models.FileRecords{},
+		FileRecords: models.FileRecords{},
 	}
 
 	if err := r.db.Create(volume).Error; err != nil {

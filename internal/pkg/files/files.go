@@ -22,6 +22,7 @@ type FileManager interface {
 	CreateFile(fileName string, bytes []byte) error
 	CreateDirectory(fileName string) error
 	FetchFile(fileName string) ([]byte, error)
+	FetchFileInfo(fileName string) (os.FileInfo, error)
 	IsFileExists(fileName string) (bool, error)
 	IsDirectoryExists(fileName string) (bool, error)
 	GetFilesAndDirs(dirname string) ([]string, []string, error)

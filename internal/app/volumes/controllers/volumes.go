@@ -19,9 +19,10 @@ type Controller interface {
 	CreateFile(c *gin.Context)
 	CreateDirectory(c *gin.Context)
 
+	GetVolume(c *gin.Context)
+
 	DownloadDirectory(c *gin.Context)
 	GetFile(c *gin.Context)
-	GetDirectory(c *gin.Context)
 }
 
 type DefaultController struct {
@@ -55,13 +56,13 @@ func (d DefaultController) CreateFile(c *gin.Context) {
 		return
 	}
 	fileData, _ := ioutil.ReadAll(file)
-	_, err = d.service.CreateFile(volumeName, formFile.Filename, fileData)
+	volume, err := d.service.CreateFile(volumeName, formFile.Filename, fileData)
 	if err != nil {
 		d.logger.Error("create file failed", zap.Error(err))
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	c.JSON(http.StatusOK, volume)
 }
 
 func (d DefaultController) CreateDirectory(c *gin.Context) {
@@ -91,15 +92,15 @@ func (d DefaultController) CreateDirectory(c *gin.Context) {
 		return
 	}
 
-	volume := c.Param("name")
+	volumeName := c.Param("name")
 
-	_, err := d.service.CreateDirectory(volume, request.Dirname)
+	volume, err := d.service.CreateDirectory(volumeName, request.Dirname)
 	if err != nil {
 		d.logger.Error("create volume failed")
 		return
 	}
 
-	c.Status(http.StatusNoContent)
+	c.JSON(http.StatusOK, volume)
 }
 
 func (d DefaultController) CreateVolume(c *gin.Context) {
@@ -123,8 +124,23 @@ func (d DefaultController) GetFile(c *gin.Context) {
 	panic("implement me")
 }
 
-func (d DefaultController) GetDirectory(c *gin.Context) {
-	panic("implement me")
+func (d DefaultController) GetVolume(c *gin.Context) {
+	session := sessions.GetSession(c)
+	if session == nil {
+		d.logger.Debug("get principal failed")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	volumeName := c.Param("name")
+
+	volume, err := d.service.GetVolume(volumeName)
+	if err != nil {
+		d.logger.Error("create volume failed")
+		return
+	}
+
+	c.JSON(http.StatusOK, volume)
 }
 
 func (d DefaultController) DownloadDirectory(c *gin.Context) {

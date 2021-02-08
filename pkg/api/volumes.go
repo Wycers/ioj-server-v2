@@ -11,40 +11,45 @@ import (
 
 type VolumeAPI interface {
 	CreateVolume() (*models.Volume, error)
-	CreateDirectory(volume, directory string) error
-	CreateFile(volume, filename string, file []byte) error
+	CreateDirectory(volume, directory string) (*models.Volume, error)
+	CreateFile(volume, filename string, file []byte) (*models.Volume, error)
 }
 
 type volumeAPI struct {
 	client *resty.Client
 }
 
-func (a *volumeAPI) CreateDirectory(volume, dirname string) error {
+func (a *volumeAPI) CreateDirectory(volumeName, dirname string) (*models.Volume, error) {
+	volume := &models.Volume{}
+
 	_, err := a.client.R().
 		SetBody(map[string]string{
 			"dirname": dirname,
 		}).
-		Post(fmt.Sprintf("/volume/%s/directory", volume))
+		SetResult(volume).
+		Post(fmt.Sprintf("/volume/%s/directory", volumeName))
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return volume, nil
 }
 
-func (a *volumeAPI) CreateFile(volume, filename string, file []byte) error {
+func (a *volumeAPI) CreateFile(volumeName, filename string, file []byte) (*models.Volume, error) {
+	volume := &models.Volume{}
 
 	_, err := a.client.R().
 		SetFileReader(
 			"file", filename, bytes.NewReader(file)).
-		Post(fmt.Sprintf("/volume/%s/file", volume))
+		SetResult(volume).
+		Post(fmt.Sprintf("/volume/%s/file", volumeName))
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return volume, nil
 }
 
 func (a *volumeAPI) CreateVolume() (*models.Volume, error) {
@@ -56,18 +61,6 @@ func (a *volumeAPI) CreateVolume() (*models.Volume, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	// Explore response object
-	//fmt.Println("Response Info:")
-	//fmt.Println("  ", resp.Request.URL)
-	//fmt.Println("  Error      :", err)
-	//fmt.Println("  Status Code:", resp.StatusCode())
-	//fmt.Println("  Status     :", resp.Status())
-	//fmt.Println("  Proto      :", resp.Proto())
-	//fmt.Println("  Time       :", resp.Time())
-	//fmt.Println("  Received At:", resp.ReceivedAt())
-	//fmt.Println("  Body       :\n", resp)
-	//fmt.Println()
 
 	return volume, nil
 }

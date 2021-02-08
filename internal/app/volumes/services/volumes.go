@@ -1,7 +1,11 @@
 package services
 
 import (
+	"fmt"
 	"os"
+	"time"
+
+	"github.com/infinity-oj/server-v2/internal/pkg/crypto"
 
 	"github.com/google/uuid"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/repositories"
@@ -16,6 +20,8 @@ type Service interface {
 	CreateFile(baseVolumeName, filename string, file []byte) (*models.Volume, error)
 	CreateDirectory(volumeName, dirname string) (*models.Volume, error)
 
+	GetVolume(volumeName string) (*models.Volume, error)
+
 	DownloadDirectory(volumeName, dirname string) (file *os.File, err error)
 	GetDirectory(volumeName, dirname string) (directories, files []string, err error)
 	GetFile(volumeName, dirname, filename string) ([]byte, error)
@@ -27,6 +33,48 @@ type DefaultService struct {
 	logger     *zap.Logger
 	Repository repositories.Repository
 	Storage    storages.Storage
+}
+
+func (d DefaultService) GetVolume(volumeName string) (*models.Volume, error) {
+	volume, err := d.Repository.GetVolume(volumeName)
+	if err != nil {
+		return nil, err
+	}
+	volumes, err := d.GetVolumeChain(volume)
+	if err != nil {
+		return nil, err
+	}
+	fileRecords := models.FileRecords{}
+
+	for i, _ := range volumes {
+		cur := volumes[i]
+		for _, curRecord := range cur.FileRecords {
+			fmt.Println(curRecord)
+
+			tag := -1
+			for i, _ := range fileRecords {
+				if fileRecords[i].FilePath == curRecord.FilePath {
+					tag = i
+					break
+				}
+			}
+			if curRecord.Opt == "Add" {
+				if tag == -1 {
+					fileRecords = append(fileRecords, curRecord)
+				} else {
+					fileRecords[tag] = curRecord
+				}
+			} else {
+				if tag != -1 {
+					fileRecords = append(fileRecords[:tag], fileRecords[tag+1:]...)
+				}
+			}
+		}
+		fmt.Println()
+	}
+	volume.FileRecords = fileRecords
+
+	return volume, nil
 }
 
 func (d DefaultService) GetVolumeChain(volume *models.Volume) ([]*models.Volume, error) {
@@ -94,17 +142,20 @@ func (d DefaultService) CreateFile(baseVolumeName, filename string, file []byte)
 		return nil, err
 	}
 	volume.Base = baseVolume.ID
-	volume.FileRecords = &models.FileRecords{
+	volumePath := time.Now().Format("20060102150405") + crypto.Sha256Bytes(file)
+	volume.FileRecords = models.FileRecords{
 		&models.FileRecord{
-			Opt:      "Add",
-			FilePath: filename,
-			FileType: "f",
+			Opt:        "Add",
+			FileType:   "f",
+			FilePath:   filename,
+			VolumeName: volume.Name,
+			VolumePath: volumePath,
 		},
 	}
 	if volume, err = d.Repository.UpdateVolume(volume); err != nil {
 		return nil, err
 	}
-	if err := d.Storage.CreateFile(volume.Name, filename, file); err != nil {
+	if err := d.Storage.CreateFile(volume.Name, volumePath, file); err != nil {
 		return nil, err
 	}
 	return volume, nil
@@ -123,17 +174,17 @@ func (d DefaultService) CreateDirectory(baseVolumeName, dirname string) (*models
 	if err != nil {
 		return nil, err
 	}
-	volume.FileRecords = &models.FileRecords{
+	volume.FileRecords = models.FileRecords{
 		&models.FileRecord{
 			Opt:      "Add",
 			FilePath: dirname,
 			FileType: "d",
 		},
 	}
-	if err := d.Storage.CreateDirectory(volume.Name, dirname); err != nil {
+	if volume, err = d.Repository.UpdateVolume(volume); err != nil {
 		return nil, err
 	}
-	return nil, nil
+	return volume, nil
 }
 
 func (d DefaultService) GetDirectory(volumeName, dirname string) (directories, files []string, err error) {
@@ -145,7 +196,11 @@ func (d DefaultService) GetFile(volumeName, dirname, filename string) ([]byte, e
 }
 
 func (d DefaultService) DownloadDirectory(volumeName, dirname string) (file *os.File, err error) {
-	return d.Storage.ArchiveDirectory(volumeName, dirname)
+	volume, err := d.GetVolume(volumeName)
+	if err != nil {
+		return nil, err
+	}
+	return d.Storage.ArchiveVolume(volume)
 }
 
 func NewVolumeService(logger *zap.Logger, Storage storages.Storage, Repository repositories.Repository) Service {
