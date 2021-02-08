@@ -11,3 +11,10 @@ func Sha256(src string) string {
 
 	return hex.EncodeToString(h.Sum([]byte("")))
 }
+
+func Sha256Bytes(src []byte) string {
+	h := sha256.New()
+	h.Write(src)
+
+	return hex.EncodeToString(h.Sum([]byte("")))
+}
