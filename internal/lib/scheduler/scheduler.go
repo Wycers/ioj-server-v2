@@ -179,10 +179,13 @@ func forward(pr *processRuntime) error {
 	ids := pr.graph.Run()
 
 	for _, block := range ids {
-		var inputs []string
+		var inputs models.Slots
 		for _, linkId := range block.Inputs {
 			if data, ok := pr.result[linkId]; ok {
-				inputs = append(inputs, data)
+				inputs = append(inputs, &models.Slot{
+					Type:  "volume",
+					Value: data,
+				})
 			} else {
 				return errors.New("wrong process definition")
 			}
@@ -203,8 +206,8 @@ func forward(pr *processRuntime) error {
 			TaskId:      uuid.New().String(),
 			Type:        block.Type,
 			Properties:  string(properties),
-			Inputs:      strings.Join(inputs, ","),
-			Outputs:     "",
+			Inputs:      inputs,
+			Outputs:     models.Slots{},
 		}
 
 		s.PushTask(block.Id, newTask)
