@@ -12,7 +12,7 @@ type Graph struct {
 type Block struct {
 	Id         int
 	Type       string
-	Properties map[string]string
+	Properties map[string]interface{}
 
 	Inputs []int
 	Output [][]int
@@ -34,12 +34,12 @@ type Link struct {
 
 func (b *Block) setProperty(key string, value string) {
 	if b.Properties == nil {
-		b.Properties = make(map[string]string)
+		b.Properties = make(map[string]interface{})
 	}
 	b.Properties[key] = value
 }
 
-func (g *Graph) AddBlock(id int, tp string, properties map[string]string, inputs []int, outputs [][]int) *Block {
+func (g *Graph) AddBlock(id int, tp string, properties map[string]interface{}, inputs []int, outputs [][]int) *Block {
 	g.Blocks[id] = &Block{
 		Id:         id,
 		Type:       tp,

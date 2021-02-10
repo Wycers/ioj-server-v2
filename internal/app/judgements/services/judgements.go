@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -46,19 +45,16 @@ func (d Service) GetTasks(taskType string) (tasks []*models.Task, err error) {
 
 	for {
 		if element := d.scheduler.FetchTask("*", "*", "basic/end", true); element != nil {
-			if score, err := strconv.ParseFloat(element.Task.Inputs[0].Value, 64); err != nil {
+			if score, ok := element.Task.Inputs[0].Value.(float64); !ok {
 				d.logger.Error("wrong score", zap.Error(err))
-				return nil, err
 			} else {
-				judgement, err := d.UpdateJudgement(element.JudgementId, models.Accepted, score, "")
-				if err != nil {
+				if _, err := d.UpdateJudgement(element.JudgementId, models.Accepted, score, ""); err != nil {
 					return nil, err
 				}
-				err = d.scheduler.FinishTask(element, []string{})
-				if err != nil {
-					return nil, err
-				}
-				fmt.Println("?", judgement)
+			}
+			err = d.scheduler.FinishTask(element, []string{})
+			if err != nil {
+				return nil, err
 			}
 		} else {
 			break

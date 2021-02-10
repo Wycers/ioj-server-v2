@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"container/list"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -192,20 +191,16 @@ func forward(pr *processRuntime) error {
 		}
 
 		for k, v := range block.Properties {
-			block.Properties[k] = strings.ReplaceAll(v, "<userVolume>", pr.submission.UserVolume)
-		}
-
-		properties, err := json.Marshal(block.Properties)
-
-		if err != nil {
-			return err
+			if str, ok := v.(string); ok {
+				block.Properties[k] = strings.ReplaceAll(str, "<userVolume>", pr.submission.UserVolume)
+			}
 		}
 
 		newTask := &models.Task{
 			JudgementId: pr.judgement.JudgementId,
 			TaskId:      uuid.New().String(),
 			Type:        block.Type,
-			Properties:  string(properties),
+			Properties:  block.Properties,
 			Inputs:      inputs,
 			Outputs:     models.Slots{},
 		}

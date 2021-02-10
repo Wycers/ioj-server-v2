@@ -8,24 +8,23 @@ import (
 )
 
 type Slot struct {
-	Type  string `json:"type"`
-	Value string `json:"value"`
+	Type  string      `json:"type"`
+	Value interface{} `json:"value"`
 }
+type Slots []*Slot
 
 type Task struct {
 	Model
 
+	Type        string `json:"type"`
 	TaskId      string `json:"taskId"`
 	JudgementId string `json:"judgementId"`
 
-	Type       string `json:"type"`
-	Properties string `json:"properties"`
+	Properties map[string]interface{} `json:"properties" gorm:"type:json"`
 
 	Inputs  Slots `json:"inputs" gorm:"type:json"`
 	Outputs Slots `json:"outputs" gorm:"type:json"`
 }
-
-type Slots []*Slot
 
 func (slots *Slots) Scan(value interface{}) error {
 	bytes, ok := value.([]byte)
