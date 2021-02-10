@@ -11,12 +11,26 @@ import (
 
 type VolumeAPI interface {
 	CreateVolume() (*models.Volume, error)
-	CreateDirectory(volume, directory string) (*models.Volume, error)
-	CreateFile(volume, filename string, file []byte) (*models.Volume, error)
+	CreateDirectory(volumeName, directory string) (*models.Volume, error)
+	CreateFile(volumeName, filename string, file []byte) (*models.Volume, error)
+	DownloadVolume(volumeName, directory string) ([]byte, error)
 }
 
 type volumeAPI struct {
 	client *resty.Client
+}
+
+func (a *volumeAPI) DownloadVolume(volumeName, directory string) ([]byte, error) {
+	resp, err := a.client.R().
+		SetPathParams(map[string]string{
+			"volumeName": volumeName,
+		}).
+		SetQueryParam("dirname", directory).
+		Get("/volume/{volumeName}/download")
+	if err != nil {
+		return nil, err
+	}
+	return resp.Body(), nil
 }
 
 func (a *volumeAPI) CreateDirectory(volumeName, dirname string) (*models.Volume, error) {
