@@ -2,7 +2,7 @@ package api
 
 import (
 	"bytes"
-	"fmt"
+	"path/filepath"
 
 	"github.com/go-resty/resty/v2"
 
@@ -34,14 +34,18 @@ func (a *volumeAPI) DownloadVolume(volumeName, directory string) ([]byte, error)
 }
 
 func (a *volumeAPI) CreateDirectory(volumeName, dirname string) (*models.Volume, error) {
+	dirname = filepath.ToSlash(dirname)
 	volume := &models.Volume{}
 
 	_, err := a.client.R().
 		SetBody(map[string]string{
 			"dirname": dirname,
 		}).
+		SetPathParams(map[string]string{
+			"volumeName": volumeName,
+		}).
 		SetResult(volume).
-		Post(fmt.Sprintf("/volume/%s/directory", volumeName))
+		Post("/volume/{volumeName}/directory")
 
 	if err != nil {
 		return nil, err
@@ -51,13 +55,17 @@ func (a *volumeAPI) CreateDirectory(volumeName, dirname string) (*models.Volume,
 }
 
 func (a *volumeAPI) CreateFile(volumeName, filename string, file []byte) (*models.Volume, error) {
+	filename = filepath.ToSlash(filename)
 	volume := &models.Volume{}
 
 	_, err := a.client.R().
 		SetFileReader(
 			"file", filename, bytes.NewReader(file)).
+		SetPathParams(map[string]string{
+			"volumeName": volumeName,
+		}).
 		SetResult(volume).
-		Post(fmt.Sprintf("/volume/%s/file", volumeName))
+		Post("/volume/{volumeName}/file")
 
 	if err != nil {
 		return nil, err
