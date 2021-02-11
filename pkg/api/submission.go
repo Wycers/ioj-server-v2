@@ -6,14 +6,14 @@ import (
 )
 
 type SubmissionAPI interface {
-	Create(problemId, volume string) (int, *models.Submission, error)
+	Create(problemId, volume string) (int, *models.Submission, *models.Judgement, error)
 }
 
 type service struct {
 	client *resty.Client
 }
 
-func (s *service) Create(problemId, volume string) (int, *models.Submission, error) {
+func (s *service) Create(problemId, volume string) (int, *models.Submission, *models.Judgement, error) {
 
 	request := map[string]interface{}{
 		"problemId": problemId,
@@ -30,10 +30,10 @@ func (s *service) Create(problemId, volume string) (int, *models.Submission, err
 		SetResult(response).
 		Post("/submission")
 	if err != nil {
-		return 0, nil, err
+		return 0, nil, nil, err
 	}
 
-	return resp.StatusCode(), response.Submission, nil
+	return resp.StatusCode(), response.Submission, response.Judgement, nil
 }
 
 func NewSubmissionAPI(client *resty.Client) SubmissionAPI {
