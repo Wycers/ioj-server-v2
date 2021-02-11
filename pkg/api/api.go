@@ -16,6 +16,7 @@ type API interface {
 	NewVolumeAPI() VolumeAPI
 	NewJudgementAPI() JudgementAPI
 	NewSubmissionAPI() SubmissionAPI
+	NewProblemAPI() ProblemAPI
 }
 
 type api struct {
@@ -44,6 +45,10 @@ func (a api) NewJudgementAPI() JudgementAPI {
 
 func (a api) NewSubmissionAPI() SubmissionAPI {
 	return NewSubmissionAPI(a.client)
+}
+
+func (a api) NewProblemAPI() ProblemAPI {
+	return NewProblemAPI(a.client)
 }
 
 func New() API {
