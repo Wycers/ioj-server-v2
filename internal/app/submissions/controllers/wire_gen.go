@@ -45,7 +45,7 @@ func CreateSubmissionController(cf string) (Controller, error) {
 	repositoriesRepository := repositories2.New(logger, db)
 	repository2 := repositories3.NewJudgementRepository(logger, db)
 	repository3 := repositories4.New(logger, db)
-	judgementsService := services.NewJudgementsService(logger, repository2, repository3, repository)
+	judgementsService := services.NewJudgementsService(logger, repository2, repositoriesRepository, repository3, repository)
 	submissionsService := services2.NewSubmissionService(logger, repository, repositoriesRepository, judgementsService)
 	controller := New(logger, submissionsService)
 	return controller, nil

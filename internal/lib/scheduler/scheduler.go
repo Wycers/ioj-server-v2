@@ -19,7 +19,7 @@ import (
 type Scheduler interface {
 	List()
 
-	NewProcessRuntime(submission *models.Submission, judgement *models.Judgement, process *models.Process) error
+	NewProcessRuntime(problem *models.Problem, submission *models.Submission, judgement *models.Judgement, process *models.Process) error
 
 	PushTask(blockId int, task *models.Task)
 	FetchTask(judgementId, taskId, taskType string, ignoreLock bool) *TaskElement
@@ -30,6 +30,7 @@ type Scheduler interface {
 }
 
 type processRuntime struct {
+	problem    *models.Problem
 	submission *models.Submission
 	judgement  *models.Judgement
 
@@ -74,7 +75,7 @@ type ProcessElement struct {
 }
 
 // NewProcessRuntime create new process runtime information with judgement and process
-func (s scheduler) NewProcessRuntime(submission *models.Submission, judgement *models.Judgement, process *models.Process) error {
+func (s scheduler) NewProcessRuntime(problem *models.Problem, submission *models.Submission, judgement *models.Judgement, process *models.Process) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
@@ -82,7 +83,11 @@ func (s scheduler) NewProcessRuntime(submission *models.Submission, judgement *m
 	processId := process.ID
 	judgementId := judgement.JudgementId
 
-	graph, err := nodeEngine.NewGraphByDefinition(process.Definition)
+	definition := process.Definition
+	definition = strings.ReplaceAll(definition, "<userVolume>", submission.UserVolume)
+	definition = strings.ReplaceAll(definition, "<publicVolume>", problem.PublicVolume)
+	definition = strings.ReplaceAll(definition, "<privateVolume>", problem.PrivateVolume)
+	graph, err := nodeEngine.NewGraphByDefinition(definition)
 	if err != nil {
 		s.logger.Error("parse process definition failed",
 			zap.Uint64("submission id", submissionId),
@@ -187,12 +192,6 @@ func forward(pr *processRuntime) error {
 				})
 			} else {
 				return errors.New("wrong process definition")
-			}
-		}
-
-		for k, v := range block.Properties {
-			if str, ok := v.(string); ok {
-				block.Properties[k] = strings.ReplaceAll(str, "<userVolume>", pr.submission.UserVolume)
 			}
 		}
 

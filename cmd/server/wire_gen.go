@@ -79,7 +79,7 @@ func CreateApp(cf string) (*server.Application, error) {
 	repositoriesRepository := repositories2.NewMysqlSubmissionsRepository(logger, db)
 	repository2 := repositories3.NewJudgementRepository(logger, db)
 	repository3 := repositories4.New(logger, db)
-	judgementsService := services2.NewJudgementsService(logger, repository2, repository3, repositoriesRepository)
+	judgementsService := services2.NewJudgementsService(logger, repository2, repository, repository3, repositoriesRepository)
 	submissionsService := services3.NewSubmissionService(logger, repositoriesRepository, repository, judgementsService)
 	controllersController := controllers2.New(logger, submissionsService)
 	initSubmissionGroupFn := submissions.CreateInitControllersFn(controllersController)

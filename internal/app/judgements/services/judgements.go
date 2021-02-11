@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	problemRepository "github.com/infinity-oj/server-v2/internal/app/problems/repositories"
+
 	"github.com/google/uuid"
 
 	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
@@ -36,6 +38,7 @@ type Service struct {
 	Repository           repositories.Repository
 	processRepository    processRepository.Repository
 	submissionRepository submissionRepository.Repository
+	problemRepository    problemRepository.Repository
 
 	scheduler scheduler.Scheduler
 }
@@ -260,7 +263,11 @@ func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (int
 	}
 	d.logger.Debug("create judgement successfully")
 
-	err = d.scheduler.NewProcessRuntime(submission, judgement, process)
+	problem, err := d.problemRepository.GetProblemById(submission.ProblemId)
+	if err != nil {
+		panic(err)
+	}
+	err = d.scheduler.NewProcessRuntime(problem, submission, judgement, process)
 
 	return http.StatusOK, judgement, err
 }
@@ -278,6 +285,7 @@ func (d Service) GetJudgements(accountId uint64) ([]*models.Judgement, error) {
 func NewJudgementsService(
 	logger *zap.Logger,
 	Repository repositories.Repository,
+	ProblemRepository problemRepository.Repository,
 	ProcessRepository processRepository.Repository,
 	SubmissionRepository submissionRepository.Repository,
 ) JudgementsService {
@@ -305,11 +313,20 @@ func NewJudgementsService(
 		if submission == nil {
 			continue
 		}
+		// get problem
+		problem, err := ProblemRepository.GetProblemById(submission.ProblemId)
+		if err != nil {
+			panic(err)
+		}
+		if problem == nil {
+			continue
+		}
+
 		logger.Debug("restore judgement",
 			zap.String("judgement id", judgement.JudgementId),
 			zap.String("submission user space", submission.UserVolume),
 		)
-		err = s.NewProcessRuntime(submission, judgement, process)
+		err = s.NewProcessRuntime(problem, submission, judgement, process)
 	}
 
 	return &Service{
@@ -317,6 +334,7 @@ func NewJudgementsService(
 		Repository:           Repository,
 		processRepository:    ProcessRepository,
 		submissionRepository: SubmissionRepository,
+		problemRepository:    ProblemRepository,
 
 		scheduler: s,
 	}
