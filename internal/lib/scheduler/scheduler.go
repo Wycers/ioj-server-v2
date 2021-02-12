@@ -7,6 +7,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/infinity-oj/server-v2/internal/lib/scheduler/basis"
+
 	"github.com/google/uuid"
 
 	"github.com/infinity-oj/server-v2/internal/lib/nodeEngine"
@@ -23,11 +25,13 @@ type Scheduler interface {
 
 	PushTask(blockId int, task *models.Task)
 	FetchTask(judgementId, taskId, taskType string, ignoreLock bool) *TaskElement
-	FinishTask(element *TaskElement, outputs []string) error
+	FinishTask(element *TaskElement, slots *models.Slots) error
 	RemoveTask(element *TaskElement)
 	LockTask(element *TaskElement) bool
 	UnlockTask(element *TaskElement) bool
 }
+
+var pendingTasks chan *TaskElement
 
 type processRuntime struct {
 	problem    *models.Problem
@@ -35,7 +39,7 @@ type processRuntime struct {
 	judgement  *models.Judgement
 
 	graph  *nodeEngine.Graph
-	result map[int]string
+	result map[int]*models.Slot
 }
 
 type scheduler struct {
@@ -97,7 +101,7 @@ func (s scheduler) NewProcessRuntime(problem *models.Problem, submission *models
 		return nil
 	}
 
-	result := make(map[int]string)
+	result := make(map[int]*models.Slot)
 	pr := &processRuntime{
 		submission: submission,
 		judgement:  judgement,
@@ -138,7 +142,7 @@ func (s scheduler) PushTask(blockId int, task *models.Task) {
 		Type:        task.Type,
 	}
 
-	s.tasks.PushBack(element)
+	pendingTasks <- element
 }
 
 // FetchTask returns task with specific task type.
@@ -210,7 +214,7 @@ func forward(pr *processRuntime) error {
 	return nil
 }
 
-func (s scheduler) FinishTask(element *TaskElement, outputs []string) error {
+func (s scheduler) FinishTask(element *TaskElement, outputs *models.Slots) error {
 	blockId := element.BlockId
 	pr, ok := s.processes[element.JudgementId]
 	if !ok {
@@ -220,16 +224,16 @@ func (s scheduler) FinishTask(element *TaskElement, outputs []string) error {
 	}
 	block := pr.graph.FindBlockById(blockId)
 
-	if len(block.Output) != len(outputs) {
+	if len(block.Output) != len(*outputs) {
 		msg := fmt.Sprintf("output slots mismatch, block %d expects %d but %d",
 			blockId,
 			len(block.Output),
-			len(outputs),
+			len(*outputs),
 		)
 		return errors.New(msg)
 	}
 
-	for index, output := range outputs {
+	for index, output := range *outputs {
 		links := pr.graph.FindLinkBySourcePort(blockId, index)
 		for _, link := range links {
 			pr.result[link.Id] = output
@@ -309,6 +313,8 @@ var s *scheduler
 var once sync.Once
 
 func New(logger *zap.Logger) Scheduler {
+	funcs := []func(element *TaskElement) (bool, error){basis.File}
+
 	once.Do(func() {
 		s = &scheduler{
 			logger.With(zap.String("type", "scheduler")),
@@ -316,6 +322,46 @@ func New(logger *zap.Logger) Scheduler {
 			&list.List{},
 			make(map[string]*processRuntime),
 		}
+
+		go func() {
+			for element := range pendingTasks {
+				matched := false
+				for _, f := range funcs {
+					matched, _ = f(element)
+					if matched {
+						break
+					}
+				}
+				if !matched {
+					continue
+				}
+
+				err := s.FinishTask(element, &element.Task.Outputs)
+				if err != nil {
+					// log
+					continue
+				}
+				s.tasks.PushBack(element)
+
+				//if element := d.scheduler.FetchTask("*", "*", "basic/end", true); element != nil {
+				//	if score, ok := element.Task.Inputs[0].Value.(float64); !ok {
+				//		d.logger.Error("wrong score", zap.Error(err))
+				//	} else {
+				//		if _, err := d.UpdateJudgement(element.JudgementId, models.Accepted, score, ""); err != nil {
+				//			return nil, err
+				//		}
+				//	}
+				//	err = d.scheduler.FinishTask(element, []string{})
+				//	if err != nil {
+				//		return nil, err
+				//	}
+				//} else {
+				//	break
+				//}
+
+			}
+		}()
 	})
+
 	return s
 }
