@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	problemRepository "github.com/infinity-oj/server-v2/internal/app/problems/repositories"
 
@@ -45,24 +44,6 @@ type Service struct {
 
 func (d Service) GetTasks(taskType string) (tasks []*models.Task, err error) {
 	d.scheduler.List()
-
-	for {
-		if element := d.scheduler.FetchTask("*", "*", "basic/end", true); element != nil {
-			if score, ok := element.Task.Inputs[0].Value.(float64); !ok {
-				d.logger.Error("wrong score", zap.Error(err))
-			} else {
-				if _, err := d.UpdateJudgement(element.JudgementId, models.Accepted, score, ""); err != nil {
-					return nil, err
-				}
-			}
-			err = d.scheduler.FinishTask(element, []string{})
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			break
-		}
-	}
 
 	d.logger.Info("get task", zap.String("type", taskType))
 	element := d.scheduler.FetchTask("*", "*", taskType, false)
@@ -199,25 +180,24 @@ func (d Service) CreateJudgement(accountId, processId, submissionId uint64) (int
 		zap.Uint64("submission id", submissionId),
 	)
 
-	judgements, err := d.Repository.GetJudgementsByAccountId(accountId)
-	if err != nil {
-		return http.StatusInternalServerError, nil, err
-	}
-
-	for _, judgement := range judgements {
-		if judgement.Status == models.Accepted || judgement.Status == models.Pending {
-			now := time.Now()
-			judgeTime := judgement.CreatedAt
-			dateEquals := func(a time.Time, b time.Time) bool {
-				y1, m1, d1 := a.Date()
-				y2, m2, d2 := b.Date()
-				return y1 == y2 && m1 == m2 && d1 == d2
-			}
-			if dateEquals(judgeTime, now) {
-				return http.StatusForbidden, nil, errors.New("previous judgement accepted today")
-			}
-		}
-	}
+	//judgements, err := d.Repository.GetJudgementsByAccountId(accountId)
+	//if err != nil {
+	//	return http.StatusInternalServerError, nil, err
+	//}
+	//for _, judgement := range judgements {
+	//	if judgement.Status == models.Accepted || judgement.Status == models.Pending {
+	//		now := time.Now()
+	//		judgeTime := judgement.CreatedAt
+	//		dateEquals := func(a time.Time, b time.Time) bool {
+	//			y1, m1, d1 := a.Date()
+	//			y2, m2, d2 := b.Date()
+	//			return y1 == y2 && m1 == m2 && d1 == d2
+	//		}
+	//		if dateEquals(judgeTime, now) {
+	//			return http.StatusForbidden, nil, errors.New("previous judgement accepted today")
+	//		}
+	//	}
+	//}
 
 	// get process
 	process, err := d.processRepository.GetProcess(processId)
