@@ -240,9 +240,10 @@ func (d *DefaultController) UpdateTask(c *gin.Context) {
 
 	request := struct {
 		Token   string `json:"token" binding:"required"`
-		Outputs string `json:"outputs" binding:"required"`
 		Warning string `json:"warning" binding:""`
 		Error   string `json:"error" binding:""`
+
+		Outputs models.Slots `json:"outputs" binding:"required"`
 	}{}
 
 	if err := c.ShouldBind(&request); err != nil {
@@ -265,7 +266,7 @@ func (d *DefaultController) UpdateTask(c *gin.Context) {
 		zap.String("error", request.Error),
 	)
 
-	task, err := d.service.UpdateTask(taskId, request.Outputs, request.Warning, request.Error)
+	task, err := d.service.UpdateTask(taskId, request.Warning, request.Error, &request.Outputs)
 	if err != nil {
 		d.logger.Error("update task", zap.Error(err))
 
