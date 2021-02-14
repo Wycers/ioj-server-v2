@@ -188,10 +188,7 @@ func forward(pr *processRuntime) error {
 		var inputs models.Slots
 		for _, linkId := range block.Inputs {
 			if data, ok := pr.result[linkId]; ok {
-				inputs = append(inputs, &models.Slot{
-					Type:  "volume",
-					Value: data,
-				})
+				inputs = append(inputs, data)
 			} else {
 				return errors.New("wrong process definition")
 			}
@@ -324,7 +321,8 @@ func New(logger *zap.Logger) Scheduler {
 		}
 
 		go func() {
-			for element := range pendingTasks {
+			for {
+				element := <-pendingTasks
 				matched := false
 				for _, f := range funcs {
 					matched, _ = f(element)
@@ -335,7 +333,7 @@ func New(logger *zap.Logger) Scheduler {
 				if matched {
 					err := s.FinishTask(element, &element.Task.Outputs)
 					if err != nil {
-						// log
+						fmt.Println(err)
 						continue
 					}
 					continue
