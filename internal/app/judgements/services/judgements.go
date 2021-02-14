@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	problemRepository "github.com/infinity-oj/server-v2/internal/app/problems/repositories"
 
@@ -28,7 +27,7 @@ type JudgementsService interface {
 
 	GetTasks(taskType string) (task []*models.Task, err error)
 	GetTask(taskId string) (task *models.Task, err error)
-	UpdateTask(taskId, outputs, warning, error string) (task *models.Task, err error)
+	UpdateTask(taskId, warning, error string, outputs *models.Slots) (task *models.Task, err error)
 	ReserveTask(taskId string) (token string, locked bool, err error)
 }
 
@@ -44,6 +43,24 @@ type Service struct {
 
 func (d Service) GetTasks(taskType string) (tasks []*models.Task, err error) {
 	d.scheduler.List()
+
+	for {
+		element := d.scheduler.FetchTask("*", "*", "basic/end", true)
+		if element == nil {
+			break
+		}
+		if score, ok := element.Task.Inputs[0].Value.(float64); !ok {
+			d.logger.Error("wrong score", zap.Error(err))
+		} else {
+			if _, err := d.UpdateJudgement(element.JudgementId, models.Accepted, score, ""); err != nil {
+				return nil, err
+			}
+		}
+		err = d.scheduler.FinishTask(element, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	d.logger.Info("get task", zap.String("type", taskType))
 	element := d.scheduler.FetchTask("*", "*", taskType, false)
@@ -75,7 +92,7 @@ func (d Service) GetTask(taskId string) (task *models.Task, err error) {
 	return
 }
 
-func (d Service) UpdateTask(taskId, outputs, warning, error string) (task *models.Task, err error) {
+func (d Service) UpdateTask(taskId, warning, error string, outputs *models.Slots) (task *models.Task, err error) {
 	taskElement := d.scheduler.FetchTask("*", taskId, "*", true)
 	if taskElement == nil {
 		d.logger.Debug("invalid token: no such task",
@@ -117,11 +134,11 @@ func (d Service) UpdateTask(taskId, outputs, warning, error string) (task *model
 	//	return nil, err
 	//}
 
-	err = d.scheduler.FinishTask(taskElement, strings.Split(outputs, ","))
+	err = d.scheduler.FinishTask(taskElement, outputs)
 
 	// calculate next task
 	if err != nil {
-		d.logger.Error("create judgement: initial process failed",
+		d.logger.Error("update task: finish task failed",
 			zap.String("task id", taskId),
 			zap.Error(err),
 		)

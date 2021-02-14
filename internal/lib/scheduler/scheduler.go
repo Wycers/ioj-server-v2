@@ -7,8 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/infinity-oj/server-v2/internal/lib/scheduler/basis"
-
 	"github.com/google/uuid"
 
 	"github.com/infinity-oj/server-v2/internal/lib/nodeEngine"
@@ -313,7 +311,9 @@ var s *scheduler
 var once sync.Once
 
 func New(logger *zap.Logger) Scheduler {
-	funcs := []func(element *TaskElement) (bool, error){basis.File}
+	pendingTasks = make(chan *TaskElement, 128)
+
+	funcs := []func(element *TaskElement) (bool, error){File}
 
 	once.Do(func() {
 		s = &scheduler{
@@ -332,33 +332,16 @@ func New(logger *zap.Logger) Scheduler {
 						break
 					}
 				}
-				if !matched {
+				if matched {
+					err := s.FinishTask(element, &element.Task.Outputs)
+					if err != nil {
+						// log
+						continue
+					}
 					continue
 				}
 
-				err := s.FinishTask(element, &element.Task.Outputs)
-				if err != nil {
-					// log
-					continue
-				}
 				s.tasks.PushBack(element)
-
-				//if element := d.scheduler.FetchTask("*", "*", "basic/end", true); element != nil {
-				//	if score, ok := element.Task.Inputs[0].Value.(float64); !ok {
-				//		d.logger.Error("wrong score", zap.Error(err))
-				//	} else {
-				//		if _, err := d.UpdateJudgement(element.JudgementId, models.Accepted, score, ""); err != nil {
-				//			return nil, err
-				//		}
-				//	}
-				//	err = d.scheduler.FinishTask(element, []string{})
-				//	if err != nil {
-				//		return nil, err
-				//	}
-				//} else {
-				//	break
-				//}
-
 			}
 		}()
 	})
