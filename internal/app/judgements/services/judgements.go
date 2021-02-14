@@ -142,6 +142,8 @@ func (d Service) UpdateTask(taskId, warning, error string, outputs *models.Slots
 			zap.String("task id", taskId),
 			zap.Error(err),
 		)
+		d.scheduler.UnlockTask(taskElement)
+		return nil, err
 	}
 
 	return task, nil
