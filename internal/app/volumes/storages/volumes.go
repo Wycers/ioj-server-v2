@@ -55,6 +55,7 @@ func (m *FileManager) ArchiveVolume(volume *models.Volume) (file *os.File, err e
 				return fileRecord, nil
 			} else {
 				filePath := path.Join(fileRecord.VolumeName, fileRecord.VolumePath)
+				filePath = filepath.ToSlash(filePath)
 				info, err := m.fm.FetchFileInfo(filePath)
 				if err != nil {
 					return nil, err
@@ -80,6 +81,7 @@ func (m *FileManager) ArchiveVolume(volume *models.Volume) (file *os.File, err e
 		} else {
 			header.Method = zip.Deflate
 		}
+		header.Name = filepath.ToSlash(header.Name)
 
 		writer, err := archive.CreateHeader(header)
 		if err != nil {

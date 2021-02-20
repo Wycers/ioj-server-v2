@@ -3,9 +3,10 @@ package http
 import (
 	"context"
 	"fmt"
-	"github.com/opentracing/opentracing-go"
 	"net/http"
 	"time"
+
+	"github.com/opentracing/opentracing-go"
 
 	"github.com/gin-contrib/pprof"
 	ginzap "github.com/gin-contrib/zap"
