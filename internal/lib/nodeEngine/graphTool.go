@@ -89,7 +89,7 @@ func NewGraphByDefinition(definition string) (*Graph, error) {
 			if v, ok := v.(string); ok {
 				block.setProperty(k, v)
 			} else {
-				fmt.Println("==> value not string:", v)
+				fmt.Println("==> value not string:", k, v)
 			}
 		}
 	}

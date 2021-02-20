@@ -89,6 +89,7 @@ func (s scheduler) NewProcessRuntime(problem *models.Problem, submission *models
 	definition = strings.ReplaceAll(definition, "<userVolume>", submission.UserVolume)
 	definition = strings.ReplaceAll(definition, "<publicVolume>", problem.PublicVolume)
 	definition = strings.ReplaceAll(definition, "<privateVolume>", problem.PrivateVolume)
+	definition = strings.ReplaceAll(definition, "<language>", "cpp")
 	graph, err := nodeEngine.NewGraphByDefinition(definition)
 	if err != nil {
 		s.logger.Error("parse process definition failed",
@@ -304,13 +305,39 @@ func (s scheduler) UnlockTask(element *TaskElement) bool {
 	return true
 }
 
+func consume() {
+	funcs := []func(element *TaskElement) (bool, error){File, String}
+
+	for element := range pendingTasks {
+
+		fmt.Println("element", element)
+		matched := false
+		for _, f := range funcs {
+			var err error
+			matched, err = f(element)
+			fmt.Println(err)
+			if matched {
+				break
+			}
+		}
+		if matched {
+			err := s.FinishTask(element, &element.Task.Outputs)
+			if err != nil {
+				fmt.Println(err)
+				continue
+			}
+			continue
+		}
+
+		s.tasks.PushBack(element)
+	}
+}
+
 var s *scheduler
 var once sync.Once
 
 func New(logger *zap.Logger) Scheduler {
 	pendingTasks = make(chan *TaskElement, 128)
-
-	funcs := []func(element *TaskElement) (bool, error){File}
 
 	once.Do(func() {
 		s = &scheduler{
@@ -319,30 +346,9 @@ func New(logger *zap.Logger) Scheduler {
 			&list.List{},
 			make(map[string]*processRuntime),
 		}
-
-		go func() {
-			for {
-				element := <-pendingTasks
-				matched := false
-				for _, f := range funcs {
-					matched, _ = f(element)
-					if matched {
-						break
-					}
-				}
-				if matched {
-					err := s.FinishTask(element, &element.Task.Outputs)
-					if err != nil {
-						fmt.Println(err)
-						continue
-					}
-					continue
-				}
-
-				s.tasks.PushBack(element)
-			}
-		}()
 	})
+
+	go consume()
 
 	return s
 }
