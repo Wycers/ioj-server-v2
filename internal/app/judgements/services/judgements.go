@@ -56,7 +56,7 @@ func (d Service) GetTasks(taskType string) (tasks []*models.Task, err error) {
 				return nil, err
 			}
 		}
-		err = d.scheduler.FinishTask(element, nil)
+		err = d.scheduler.FinishTask(element, &models.Slots{})
 		if err != nil {
 			return nil, err
 		}

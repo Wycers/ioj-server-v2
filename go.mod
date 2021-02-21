@@ -3,6 +3,7 @@ module github.com/infinity-oj/server-v2
 go 1.14
 
 require (
+	github.com/PaesslerAG/gval v1.1.0
 	github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd // indirect
 	github.com/gin-contrib/pprof v1.3.0
 	github.com/gin-contrib/sessions v0.0.3

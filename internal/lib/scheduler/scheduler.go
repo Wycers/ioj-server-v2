@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -46,6 +47,34 @@ type scheduler struct {
 
 	tasks     *list.List
 	processes map[string]*processRuntime
+}
+
+func (s *scheduler) release() {
+	for te := s.tasks.Front(); te != nil; te = te.Next() {
+		element, ok := te.Value.(*TaskElement)
+
+		if !ok {
+			fmt.Println(te.Value)
+			continue
+		}
+
+		if !element.IsLocked {
+			continue
+		}
+
+		fmt.Println(time.Now().Sub(element.LockedAt))
+
+		if time.Now().Sub(element.LockedAt) > 3*time.Second {
+			s.UnlockTask(element)
+		}
+	}
+}
+
+func (s *scheduler) releaseTimer() {
+	for _ = range time.Tick(3 * time.Second) {
+		s.release()
+	}
+	panic("should not be here")
 }
 
 func (s scheduler) List() {
@@ -89,7 +118,6 @@ func (s scheduler) NewProcessRuntime(problem *models.Problem, submission *models
 	definition = strings.ReplaceAll(definition, "<userVolume>", submission.UserVolume)
 	definition = strings.ReplaceAll(definition, "<publicVolume>", problem.PublicVolume)
 	definition = strings.ReplaceAll(definition, "<privateVolume>", problem.PrivateVolume)
-	definition = strings.ReplaceAll(definition, "<language>", "cpp")
 	graph, err := nodeEngine.NewGraphByDefinition(definition)
 	if err != nil {
 		s.logger.Error("parse process definition failed",
@@ -115,6 +143,7 @@ func (s scheduler) NewProcessRuntime(problem *models.Problem, submission *models
 
 type TaskElement struct {
 	IsLocked bool
+	LockedAt time.Time
 
 	JudgementId string
 	BlockId     int
@@ -196,9 +225,15 @@ func forward(pr *processRuntime) error {
 		}
 
 		newTask := &models.Task{
-			JudgementId: pr.judgement.JudgementId,
-			TaskId:      uuid.New().String(),
+			Model: models.Model{
+				ID:        0,
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+				DeletedAt: nil,
+			},
 			Type:        block.Type,
+			TaskId:      uuid.New().String(),
+			JudgementId: pr.judgement.JudgementId,
 			Properties:  block.Properties,
 			Inputs:      inputs,
 			Outputs:     models.Slots{},
@@ -281,6 +316,7 @@ func (s scheduler) LockTask(element *TaskElement) bool {
 		return false
 	}
 	element.IsLocked = true
+	element.LockedAt = time.Now()
 	return true
 }
 
@@ -306,7 +342,7 @@ func (s scheduler) UnlockTask(element *TaskElement) bool {
 }
 
 func consume() {
-	funcs := []func(element *TaskElement) (bool, error){File, String}
+	funcs := []func(element *TaskElement) (bool, error){File, String, Evaluate}
 
 	for element := range pendingTasks {
 
@@ -346,6 +382,7 @@ func New(logger *zap.Logger) Scheduler {
 			&list.List{},
 			make(map[string]*processRuntime),
 		}
+		go s.releaseTimer()
 	})
 
 	go consume()
