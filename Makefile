@@ -32,8 +32,6 @@ prod: clean wire
 	go env -w GOOS=linux
 	go env -w GOARCH=amd64
 	go build -o ./dist/$(BIN_FILE)-linux-amd64 -ldflags "-s -w" ./cmd/server
-	scp ./dist/$(BIN_FILE)-linux-amd64 ai:~/proj3
-
 
 .PHONY: run
 run: $(BIN_FILE)
