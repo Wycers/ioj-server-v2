@@ -10,7 +10,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/volumes/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/services"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/storages"
-	"github.com/infinity-oj/server-v2/internal/pkg/config"
+	"github.com/infinity-oj/server-v2/internal/pkg/configs"
 	"github.com/infinity-oj/server-v2/internal/pkg/database"
 	"github.com/infinity-oj/server-v2/internal/pkg/log"
 )
@@ -18,7 +18,7 @@ import (
 // Injectors from wire.go:
 
 func CreateVolumesController(cf string, sto storages.Storage, rep repositories.Repository) (Controller, error) {
-	viper, err := config.New(cf)
+	viper, err := configs.New(cf)
 	if err != nil {
 		return nil, err
 	}
@@ -37,4 +37,4 @@ func CreateVolumesController(cf string, sto storages.Storage, rep repositories.R
 
 // wire.go:
 
-var testProviderSet = wire.NewSet(log.ProviderSet, config.ProviderSet, database.ProviderSet, services.ProviderSet, ProviderSet)
+var testProviderSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, database.ProviderSet, services.ProviderSet, ProviderSet)

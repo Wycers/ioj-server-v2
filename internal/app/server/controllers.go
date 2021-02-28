@@ -9,7 +9,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/processes"
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
 	"github.com/infinity-oj/server-v2/internal/app/volumes"
-	"github.com/infinity-oj/server-v2/internal/pkg/transports/http"
+	"github.com/infinity-oj/server-v2/internal/pkg/http"
 )
 
 func CreateInitControllersFn(

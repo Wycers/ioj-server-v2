@@ -9,7 +9,7 @@ import (
 	"github.com/google/wire"
 	"github.com/infinity-oj/server-v2/internal/app/problems/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/problems/services"
-	"github.com/infinity-oj/server-v2/internal/pkg/config"
+	"github.com/infinity-oj/server-v2/internal/pkg/configs"
 	"github.com/infinity-oj/server-v2/internal/pkg/database"
 	"github.com/infinity-oj/server-v2/internal/pkg/log"
 )
@@ -17,7 +17,7 @@ import (
 // Injectors from wire.go:
 
 func CreateProblemController(cf string) (Controller, error) {
-	viper, err := config.New(cf)
+	viper, err := configs.New(cf)
 	if err != nil {
 		return nil, err
 	}
@@ -45,4 +45,4 @@ func CreateProblemController(cf string) (Controller, error) {
 
 // wire.go:
 
-var providerSet = wire.NewSet(log.ProviderSet, config.ProviderSet, database.ProviderSet, services.ProviderSet, repositories.ProviderSet, ProviderSet)
+var providerSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, database.ProviderSet, services.ProviderSet, repositories.ProviderSet, ProviderSet)

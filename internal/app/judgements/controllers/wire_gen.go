@@ -12,7 +12,7 @@ import (
 	repositories4 "github.com/infinity-oj/server-v2/internal/app/problems/repositories"
 	repositories2 "github.com/infinity-oj/server-v2/internal/app/processes/repositories"
 	repositories3 "github.com/infinity-oj/server-v2/internal/app/submissions/repositories"
-	"github.com/infinity-oj/server-v2/internal/pkg/config"
+	"github.com/infinity-oj/server-v2/internal/pkg/configs"
 	"github.com/infinity-oj/server-v2/internal/pkg/database"
 	"github.com/infinity-oj/server-v2/internal/pkg/log"
 )
@@ -20,7 +20,7 @@ import (
 // Injectors from wire.go:
 
 func CreateJudgementsController(cf string, sto repositories.Repository, sto2 repositories2.Repository, sto3 repositories3.Repository, sto4 repositories4.Repository) (Controller, error) {
-	viper, err := config.New(cf)
+	viper, err := configs.New(cf)
 	if err != nil {
 		return nil, err
 	}
@@ -39,4 +39,4 @@ func CreateJudgementsController(cf string, sto repositories.Repository, sto2 rep
 
 // wire.go:
 
-var testProviderSet = wire.NewSet(log.ProviderSet, config.ProviderSet, database.ProviderSet, services.ProviderSet, ProviderSet)
+var testProviderSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, database.ProviderSet, services.ProviderSet, ProviderSet)

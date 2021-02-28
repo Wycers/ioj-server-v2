@@ -1,4 +1,4 @@
-package config
+package configs
 
 import (
 	"fmt"
@@ -24,4 +24,5 @@ func New(path string) (*viper.Viper, error) {
 
 	return v, err
 }
+
 var ProviderSet = wire.NewSet(New)

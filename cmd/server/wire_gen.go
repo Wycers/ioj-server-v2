@@ -33,18 +33,18 @@ import (
 	repositories6 "github.com/infinity-oj/server-v2/internal/app/volumes/repositories"
 	services6 "github.com/infinity-oj/server-v2/internal/app/volumes/services"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/storages"
-	"github.com/infinity-oj/server-v2/internal/pkg/config"
+	"github.com/infinity-oj/server-v2/internal/pkg/configs"
 	"github.com/infinity-oj/server-v2/internal/pkg/database"
 	"github.com/infinity-oj/server-v2/internal/pkg/files"
+	"github.com/infinity-oj/server-v2/internal/pkg/http"
 	"github.com/infinity-oj/server-v2/internal/pkg/jaeger"
 	"github.com/infinity-oj/server-v2/internal/pkg/log"
-	"github.com/infinity-oj/server-v2/internal/pkg/transports/http"
 )
 
 // Injectors from wire.go:
 
 func CreateApp(cf string) (*server.Application, error) {
-	viper, err := config.New(cf)
+	viper, err := configs.New(cf)
 	if err != nil {
 		return nil, err
 	}
@@ -128,4 +128,4 @@ func CreateApp(cf string) (*server.Application, error) {
 
 // wire.go:
 
-var providerSet = wire.NewSet(log.ProviderSet, config.ProviderSet, http.ProviderSet, server.ProviderSet, database.ProviderSet, jaeger.ProviderSet, files.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, accounts.ProviderSet, processes.ProviderSet, volumes.ProviderSet)
+var providerSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, http.ProviderSet, server.ProviderSet, database.ProviderSet, jaeger.ProviderSet, files.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, accounts.ProviderSet, processes.ProviderSet, volumes.ProviderSet)
