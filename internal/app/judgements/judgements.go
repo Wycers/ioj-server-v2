@@ -3,14 +3,11 @@ package judgements
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
-	"github.com/infinity-oj/server-v2/internal/app/judgements/controllers"
-	"github.com/infinity-oj/server-v2/internal/app/judgements/repositories"
-	"github.com/infinity-oj/server-v2/internal/app/judgements/services"
 )
 
 type InitJudgementGroupFn func(r *gin.RouterGroup)
 
-func CreateInitControllersFn(jc controllers.Controller) InitJudgementGroupFn {
+func CreateInitControllersFn(jc Controller) InitJudgementGroupFn {
 	return func(r *gin.RouterGroup) {
 		judgementGroup := r.Group("/judgement")
 		judgementGroup.GET("/", jc.GetJudgements)
@@ -29,7 +26,7 @@ func CreateInitControllersFn(jc controllers.Controller) InitJudgementGroupFn {
 }
 
 var ProviderSet = wire.NewSet(CreateInitControllersFn,
-	controllers.ProviderSet,
-	services.ProviderSet,
-	repositories.ProviderSet,
+	NewController,
+	NewService,
+	NewRepository,
 )

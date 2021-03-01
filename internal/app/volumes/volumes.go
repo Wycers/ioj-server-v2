@@ -9,9 +9,9 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/volumes/storages"
 )
 
-type InitVolumnGroupFn func(r *gin.RouterGroup)
+type InitVolumeGroupFn func(r *gin.RouterGroup)
 
-func CreateInitControllersFn(vc controllers.Controller) InitVolumnGroupFn {
+func CreateInitControllersFn(vc controllers.Controller) InitVolumeGroupFn {
 	return func(r *gin.RouterGroup) {
 		r.POST("/volume", vc.CreateVolume)
 
