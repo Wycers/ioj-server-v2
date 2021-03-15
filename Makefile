@@ -15,11 +15,10 @@ RELEASE_TAG     = $(RELEASE_VERSION).$(GIT_COUNT).$(GIT_HASH)
 all: start
 
 build:
-#     @echo "$${RELEASE_TAG}"
 	go build -ldflags "-w -s -X main.VERSION=$(RELEASE_TAG)" -o $(SERVER_BIN) ./cmd/${APP}
 
 start:
-	go run -ldflags "-X main.VERSION=$(RELEASE_TAG)" ./cmd/${APP}/main.go -f ./configs/server.yaml
+	go run -ldflags "-X main.VERSION=$(RELEASE_TAG)" ./cmd/${APP} -f ./configs/server.yaml
 
 swagger:
 	swag init --parseDependency --generalInfo ./cmd/${APP}/main.go --output ./internal/app/swagger
