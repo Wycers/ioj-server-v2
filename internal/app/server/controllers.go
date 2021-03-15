@@ -10,6 +10,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
 	"github.com/infinity-oj/server-v2/internal/app/volumes"
 	"github.com/infinity-oj/server-v2/internal/pkg/http"
+	"github.com/infinity-oj/server-v2/internal/pkg/websockets"
 )
 
 func CreateInitControllersFn(
@@ -19,8 +20,12 @@ func CreateInitControllersFn(
 	problemsInit problems.InitProblemGroupFn,
 	volumesInit volumes.InitVolumeGroupFn,
 	processesInit processes.InitProcessGroupFn,
+
+	websocketInit websockets.InitWebsocketGroupFn,
 ) http.InitControllers {
 	return func(res *gin.Engine) {
+		websocketInit(res.Group("/"))
+
 		api := res.Group("/api")
 		v1 := api.Group("/v1")
 

@@ -24,3 +24,7 @@ logs
 dist
 
 .vscode
+
+
+# config file
+server.yaml

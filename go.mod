@@ -14,6 +14,7 @@ require (
 	github.com/google/uuid v1.2.0
 	github.com/google/wire v0.5.0
 	github.com/googollee/go-socket.io v1.4.4
+	github.com/gorilla/websocket v1.4.2
 	github.com/jinzhu/copier v0.2.5
 	github.com/jinzhu/gorm v1.9.16
 	github.com/json-iterator/go v1.1.10

@@ -24,6 +24,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/pkg/http"
 	"github.com/infinity-oj/server-v2/internal/pkg/jaeger"
 	"github.com/infinity-oj/server-v2/internal/pkg/log"
+	"github.com/infinity-oj/server-v2/internal/pkg/websockets"
 )
 
 // Injectors from wire.go:
@@ -90,7 +91,8 @@ func CreateApp(cf string) (*server.Application, error) {
 	processesService := processes.NewService(logger, processesRepository)
 	processesController := processes.NewController(logger, processesService)
 	initProcessGroupFn := processes.CreateInitControllersFn(processesController)
-	initControllers := server.CreateInitControllersFn(initAccountGroupFn, initJudgementGroupFn, initSubmissionGroupFn, initProblemGroupFn, initVolumeGroupFn, initProcessGroupFn)
+	initWebsocketGroupFn := websockets.CreateInitWebSocketFn()
+	initControllers := server.CreateInitControllersFn(initAccountGroupFn, initJudgementGroupFn, initSubmissionGroupFn, initProblemGroupFn, initVolumeGroupFn, initProcessGroupFn, initWebsocketGroupFn)
 	configuration, err := jaeger.NewConfiguration(viper, logger)
 	if err != nil {
 		return nil, err
@@ -113,4 +115,4 @@ func CreateApp(cf string) (*server.Application, error) {
 
 // wire.go:
 
-var providerSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, http.ProviderSet, database.ProviderSet, jaeger.ProviderSet, files.ProviderSet, server.ProviderSet, accounts.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, processes.ProviderSet, volumes.ProviderSet)
+var providerSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, http.ProviderSet, database.ProviderSet, jaeger.ProviderSet, files.ProviderSet, server.ProviderSet, accounts.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, processes.ProviderSet, volumes.ProviderSet, websockets.ProviderSet)
