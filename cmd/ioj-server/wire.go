@@ -12,7 +12,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/server"
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
 	"github.com/infinity-oj/server-v2/internal/app/volumes"
-	"github.com/infinity-oj/server-v2/internal/pkg/config"
+	"github.com/infinity-oj/server-v2/internal/pkg/configs"
 	"github.com/infinity-oj/server-v2/internal/pkg/database"
 	"github.com/infinity-oj/server-v2/internal/pkg/files"
 	"github.com/infinity-oj/server-v2/internal/pkg/http"
@@ -22,7 +22,7 @@ import (
 
 var providerSet = wire.NewSet(
 	log.ProviderSet,
-	config.ProviderSet,
+	configs.ProviderSet,
 	http.ProviderSet,
 	database.ProviderSet,
 	jaeger.ProviderSet,

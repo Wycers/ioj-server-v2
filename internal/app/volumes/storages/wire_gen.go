@@ -7,7 +7,7 @@ package storages
 
 import (
 	"github.com/google/wire"
-	"github.com/infinity-oj/server-v2/internal/pkg/config"
+	"github.com/infinity-oj/server-v2/internal/pkg/configs"
 	"github.com/infinity-oj/server-v2/internal/pkg/database"
 	"github.com/infinity-oj/server-v2/internal/pkg/files"
 	"github.com/infinity-oj/server-v2/internal/pkg/log"
@@ -16,7 +16,7 @@ import (
 // Injectors from wire.go:
 
 func CreateFileRepository(f string) (Storage, error) {
-	viper, err := config.New(f)
+	viper, err := configs.New(f)
 	if err != nil {
 		return nil, err
 	}
@@ -42,4 +42,4 @@ func CreateFileRepository(f string) (Storage, error) {
 
 // wire.go:
 
-var testProviderSet = wire.NewSet(log.ProviderSet, config.ProviderSet, database.ProviderSet, files.ProviderSet, ProviderSet)
+var testProviderSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, database.ProviderSet, files.ProviderSet, ProviderSet)

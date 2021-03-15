@@ -1,14 +1,15 @@
 package server
 
 import (
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/google/wire"
 	"github.com/infinity-oj/server-v2/internal/pkg/http"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 type Options struct {
