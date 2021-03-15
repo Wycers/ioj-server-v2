@@ -1,0 +1,52 @@
+
+app:
+  name: server
+http-server:
+  mode: debug
+  # listening addr
+  host: 127.0.0.1
+  # listening port, 0 for random
+  port: 2333
+  tls:
+    enable: false
+    certFile: ""
+    keyFile: ""
+  gzip:
+    enable: false
+    excluded_extentions: [ ".png",".gif",".jpeg",".jpg" ]
+    excluded_paths: [ ]
+  rate_limit:
+    enable: false
+    limit: 300
+  cors:
+    enable: false
+    allow_origins: [ "*" ]
+    allow_methods: [ "GET","POST","PUT","DELETE","PATCH" ]
+    allow_credentials: true
+redis:
+  addr: 127.0.0.1:6379
+db:
+  url: host=<host> user=<username> password=<password> dbname=<dbname> sslmode=disable
+  debug: false
+log:
+  stdout: true
+  filename: logs/server.log
+  maxSize: 500
+  maxBackups: 3
+  maxAge: 3
+  level: "debug"
+volumes:
+  type: local
+  base: test_files
+jaeger:
+  serviceName: server
+  reporter:
+    localAgentHostPort: "jaeger-agent:6831"
+  sampler:
+    type: const
+    param: 1
+credentials:
+  # The secret is used to provide uniqueness to your application during the credential encryption.
+  # That means, after changing the secret, all old credentials will be invalid.
+  # If you don't know what will happen and there are already registered users, DO NOT modify it.
+  secret: imf1nlTy0j
