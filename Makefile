@@ -1,47 +1,41 @@
-BIN_FILE:=server
+.PHONY: start build
 
-.PHONY: clean
-clean:
-	-rm -f ./dist/$(BIN_FILE)-macos-amd64
-	-rm -f ./dist/$(BIN_FILE)-linux-amd64
-	-rm -f ./dist/$(BIN_FILE)-win-amd64.exe
+NOW = $(shell date -u '+%Y%m%d%I%M%S')
 
-.PHONY: mock
-mock:
-	mockery --all
+RELEASE_VERSION = v0.0.2
 
-.PHONY: wire
+APP 			= ioj-server
+SERVER_BIN  	= ./dist/${APP}
+RELEASE_ROOT 	= release
+RELEASE_SERVER 	= release/${APP}
+GIT_COUNT 		= 1# $(shell git rev-list --all --count)
+GIT_HASH        = asd#$(shell git rev-parse --short HEAD)
+RELEASE_TAG     = $(RELEASE_VERSION).$(GIT_COUNT).$(GIT_HASH)
+
+all: start
+
+build:
+#     @echo "$${RELEASE_TAG}"
+	go build -ldflags "-w -s -X main.VERSION=$(RELEASE_TAG)" -o $(SERVER_BIN) ./cmd/${APP}
+
+start:
+	go run -ldflags "-X main.VERSION=$(RELEASE_TAG)" ./cmd/${APP}/main.go -f ./configs/server.yaml
+
+swagger:
+	swag init --parseDependency --generalInfo ./cmd/${APP}/main.go --output ./internal/app/swagger
+
 wire:
-	wire ./...
+	wire gen ./cmd/${APP}
 
-$(BIN_FILE): clean wire
-	go env -w GOOS=windows
-	go env -w GOARCH=amd64
-	go build -o ./dist/$(BIN_FILE)-win-amd64.exe ./cmd/server
+air-build: wire swagger build
 
-	go env -w GOOS=darwin
-	go env -w GOARCH=amd64
-	go build -o ./dist/$(BIN_FILE)-macos-amd64 ./cmd/server
+test:
+	@go test -v $(shell go list ./...)
 
-	go env -w GOOS=linux
-	go env -w GOARCH=amd64
-	go build -o ./dist/$(BIN_FILE)-linux-amd64 ./cmd/server
+clean:
+	rm -rf data release $(SERVER_BIN) internal/app/test/data cmd/${APP}/data
 
-.PHONY: prod
-prod: clean wire
-	go env -w GOOS=linux
-	go env -w GOARCH=amd64
-	go build -o ./dist/$(BIN_FILE)-linux-amd64 -ldflags "-s -w" ./cmd/server
-
-.PHONY: run
-run: $(BIN_FILE)
-	./dist/$(BIN_FILE) -f configs/server.yml
-
-.PHONY: dev
-dev: clean wire
-	CompileDaemon -build="go build -o ./dist/$(BIN_FILE) ./cmd/server" -command="./dist/$(BIN_FILE) -f configs/server.yml"
-
-
-#.PHONY: deploy
-#deploy:
-#	docker-compose -f deployments/docker-compose.yml up --build
+pack: build
+	rm -rf $(RELEASE_ROOT) && mkdir -p $(RELEASE_SERVER)
+	cp -r $(SERVER_BIN) configs $(RELEASE_SERVER)
+	cd $(RELEASE_ROOT) && tar -cvf $(APP).tar ${APP} && rm -rf ${APP}

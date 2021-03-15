@@ -10,9 +10,10 @@ import (
 	"github.com/opentracing/opentracing-go"
 
 	"github.com/gin-contrib/pprof"
-	ginzap "github.com/gin-contrib/zap"
+	ginZap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
+	"github.com/infinity-oj/server-v2/internal/pkg/http/middlewares/ginprom"
 	"github.com/infinity-oj/server-v2/internal/pkg/utils/netutil"
 	"github.com/opentracing-contrib/go-gin/ginhttp"
 	"github.com/pkg/errors"
@@ -48,7 +49,7 @@ func NewOptions(v *viper.Viper) (*Options, error) {
 		err error
 	)
 
-	if err = v.UnmarshalKey("http", o); err != nil {
+	if err = v.UnmarshalKey("http-server", o); err != nil {
 		return nil, err
 	}
 
@@ -58,18 +59,22 @@ func NewOptions(v *viper.Viper) (*Options, error) {
 type InitControllers func(r *gin.Engine)
 
 func NewRouter(o *Options, logger *zap.Logger, init InitControllers, tracer opentracing.Tracer) *gin.Engine {
-
 	// 配置gin
 	gin.SetMode(o.Mode)
 	r := gin.New()
+	r.NoMethod(NoMethodHandler())
+	r.NoRoute(NoRouteHandler())
+
 
 	r.Use(gin.Recovery()) // panic之后自动恢复
-	r.Use(ginzap.Ginzap(logger, time.RFC3339, true))
-	r.Use(ginzap.RecoveryWithZap(logger, true))
-	//r.Use(middlewares..New(r).Middleware()) // 添加 prometheus 监控
+	r.Use(ginZap.Ginzap(logger, time.RFC3339, true))
+	r.Use(ginZap.RecoveryWithZap(logger, true))
+	r.Use(ginprom.New(r).Middleware()) // 添加 prometheus 监控
 	r.Use(ginhttp.Middleware(tracer))
 	store := cookie.NewStore([]byte(specialKey))
 	r.Use(sessions.Sessions("ioj-session", store))
+
+	// some options
 
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 	pprof.Register(r)
@@ -110,10 +115,17 @@ func (s *Server) Start() error {
 
 	addr := fmt.Sprintf("%s:%d", s.host, s.port)
 
-	s.httpServer = http.Server{Addr: addr, Handler: s.router}
+	s.httpServer = http.Server{
+		Addr:         addr,
+		Handler:      s.router,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  15 * time.Second,
+	}
 
 	s.logger.Info("http server starting ...", zap.String("addr", addr))
 	go func() {
+		// TODO: TLS support
 		if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			s.logger.Fatal("start http server err", zap.Error(err))
 			return
