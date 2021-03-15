@@ -1,0 +1,18 @@
+basePath: /api/v1
+info:
+  contact:
+    email: wycers@gmail.com
+    name: Wycer
+  description: API server for infinity-oj
+  title: ioj-server
+  version: 0.0.2
+paths: {}
+schemes:
+- http
+- https
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
