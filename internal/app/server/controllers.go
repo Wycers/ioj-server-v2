@@ -36,6 +36,12 @@ func CreateInitControllersFn(
 		volumesInit(v1)
 		processesInit(v1)
 
+		res.LoadHTMLFiles("index.html")
+
+		res.GET("/", func(c *gin.Context) {
+			c.HTML(200, "index.html", nil)
+		})
+
 		res.Static("/assets/cli", "./assets/cli")
 	}
 }
