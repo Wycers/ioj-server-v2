@@ -1,5 +1,6 @@
 package http
 
+
 import (
 	"context"
 	"fmt"
@@ -12,7 +13,6 @@ import (
 	ginzap "github.com/gin-contrib/zap"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
-	"github.com/infinity-oj/server-v2/internal/pkg/transports/http/middlewares/ginprom"
 	"github.com/infinity-oj/server-v2/internal/pkg/utils/netutil"
 	"github.com/opentracing-contrib/go-gin/ginhttp"
 	"github.com/pkg/errors"
@@ -66,7 +66,7 @@ func NewRouter(o *Options, logger *zap.Logger, init InitControllers, tracer open
 	r.Use(gin.Recovery()) // panic之后自动恢复
 	r.Use(ginzap.Ginzap(logger, time.RFC3339, true))
 	r.Use(ginzap.RecoveryWithZap(logger, true))
-	r.Use(ginprom.New(r).Middleware()) // 添加 prometheus 监控
+	//r.Use(middlewares..New(r).Middleware()) // 添加 prometheus 监控
 	r.Use(ginhttp.Middleware(tracer))
 	store := cookie.NewStore([]byte(specialKey))
 	r.Use(sessions.Sessions("ioj-session", store))
