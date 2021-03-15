@@ -11,7 +11,7 @@ builds:
       - CGO_ENABLED=0
     id: ioj-server
     binary: ioj-server
-    main: ./cmd/server
+    main: ./cmd/ioj-server
     goos:
       - linux
       - windows
@@ -25,7 +25,7 @@ archives:
 #      linux: Linux
 #      windows: Windows
       386: i386
-      amd64: x86_64
+#      amd64: x86_64
 checksum:
   name_template: 'checksums.txt'
 snapshot:
