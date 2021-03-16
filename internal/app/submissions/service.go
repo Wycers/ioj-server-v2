@@ -6,7 +6,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/problems"
 	"net/http"
 
-	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
+	"github.com/infinity-oj/server-v2/internal/lib/schedulers"
 
 	"go.uber.org/zap"
 
@@ -25,7 +25,7 @@ type service struct {
 	ProblemRepository    problems.Repository
 	//JudgementService     judgements.Service
 
-	scheduler scheduler.Scheduler
+	scheduler schedulers.Scheduler
 }
 
 func (d service) GetSubmissions(problemId string, page, pageSize int) (res []*models.Submission, err error) {
@@ -90,6 +90,6 @@ func NewService(
 		ProblemRepository:    problemsRepository,
 		//JudgementService:     judgementsService,
 
-		scheduler: scheduler.New(logger),
+		scheduler: schedulers.New(logger),
 	}
 }

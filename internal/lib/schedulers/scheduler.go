@@ -1,9 +1,10 @@
-package scheduler
+package schedulers
 
 import (
 	"container/list"
 	"errors"
 	"fmt"
+	"github.com/google/wire"
 	"strings"
 	"sync"
 	"time"
@@ -20,22 +21,25 @@ import (
 type Scheduler interface {
 	List()
 
-	NewProcessRuntime(problem *models.Problem, submission *models.Submission, judgement *models.Judgement, process *models.Process) error
+	FinishedJudgement() chan *models.Judgement
 
-	PushTask(blockId int, task *models.Task)
+	NewRuntime(problem *models.Problem, submission *models.Submission, judgement *models.Judgement, process *models.Process) (*Runtime, error)
+	PushRuntime(runtime *Runtime) error
+	FinishRuntime(runtime *Runtime)
+
 	FetchTask(judgementId, taskId, taskType string, ignoreLock bool) *TaskElement
 	FinishTask(element *TaskElement, slots *models.Slots) error
-	RemoveTask(element *TaskElement)
+	FinishTaskWithError(element *TaskElement, message string) error
 	LockTask(element *TaskElement) bool
 	UnlockTask(element *TaskElement) bool
 }
 
 var pendingTasks chan *TaskElement
 
-type processRuntime struct {
-	problem    *models.Problem
-	submission *models.Submission
-	judgement  *models.Judgement
+type Runtime struct {
+	Problem    *models.Problem
+	Submission *models.Submission
+	Judgement  *models.Judgement
 
 	graph  *nodeEngine.Graph
 	result map[int]*models.Slot
@@ -45,8 +49,43 @@ type scheduler struct {
 	logger *zap.Logger
 	mutex  *sync.Mutex
 
-	tasks     *list.List
-	processes map[string]*processRuntime
+	tasks    *list.List
+	runtimes map[*models.Judgement]*Runtime
+
+	finished chan *models.Judgement
+}
+
+func (s *scheduler) FinishRuntime(runtime *Runtime) {
+	s.logger.Debug("finish runtime",
+		zap.String("judgement id", runtime.Judgement.JudgementId),
+	)
+
+	s.finished <- runtime.Judgement
+
+	delete(s.runtimes, runtime.Judgement)
+
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	for te := s.tasks.Front(); te != nil; te = te.Next() {
+		if element, ok := te.Value.(*TaskElement); ok && element.runtime == runtime {
+			s.tasks.Remove(te)
+		}
+	}
+}
+
+func (s *scheduler) PushRuntime(runtime *Runtime) error {
+	judgement := runtime.Judgement
+
+	if _, ok := s.runtimes[judgement]; ok {
+		return errors.New("processing")
+	}
+	s.runtimes[judgement] = runtime
+
+	return forward(runtime)
+}
+
+func (s *scheduler) FinishedJudgement() chan *models.Judgement {
+	return s.finished
 }
 
 func (s *scheduler) release() {
@@ -89,9 +128,9 @@ func (s scheduler) List() {
 		}
 
 		fmt.Printf("judgement id: %s\ntask id:%s\ntype: %s\nlocked: %t\n\n",
-			element.JudgementId,
-			element.TaskId,
-			element.Type,
+			element.runtime.Judgement.JudgementId,
+			element.Task.TaskId,
+			element.Task.Type,
 			element.IsLocked,
 		)
 	}
@@ -100,19 +139,23 @@ func (s scheduler) List() {
 }
 
 type ProcessElement struct {
-	processRuntime *processRuntime
-	blockId        int
-	taskElement    *TaskElement
+	runtime     *Runtime
+	blockId     int
+	taskElement *TaskElement
 }
 
-// NewProcessRuntime create new process runtime information with judgement and process
-func (s scheduler) NewProcessRuntime(problem *models.Problem, submission *models.Submission, judgement *models.Judgement, process *models.Process) error {
+// NewRuntime create new process runtime information with judgement and process
+func (s scheduler) NewRuntime(
+	problem *models.Problem,
+	submission *models.Submission,
+	judgement *models.Judgement,
+	process *models.Process,
+) (*Runtime, error) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	submissionId := judgement.SubmissionId
 	processId := process.ID
-	judgementId := judgement.JudgementId
 
 	definition := process.Definition
 	definition = strings.ReplaceAll(definition, "<userVolume>", submission.UserVolume)
@@ -125,49 +168,42 @@ func (s scheduler) NewProcessRuntime(problem *models.Problem, submission *models
 			zap.Uint64("process id", processId),
 			zap.Error(err),
 		)
-		return nil
+		return nil, err
 	}
 
 	result := make(map[int]*models.Slot)
-	pr := &processRuntime{
-		submission: submission,
-		judgement:  judgement,
+	runtime := &Runtime{
+		Problem:    problem,
+		Submission: submission,
+		Judgement:  judgement,
 		graph:      graph,
 		result:     result,
 	}
 
-	s.processes[judgementId] = pr
-
-	return forward(pr)
+	return runtime, nil
 }
 
 type TaskElement struct {
 	IsLocked bool
 	LockedAt time.Time
 
-	JudgementId string
-	BlockId     int
-
-	TaskId string
-	Type   string
-
-	Task *models.Task
+	BlockId int
+	Task    *models.Task
+	runtime *Runtime
 }
 
-func (s scheduler) PushTask(blockId int, task *models.Task) {
+func (s scheduler) PushTask(blockId int, task *models.Task, runtime *Runtime) {
 	s.logger.Debug("push task in tasks",
 		zap.String("task id", task.TaskId),
 		zap.String("task type", task.Type),
 	)
 
 	element := &TaskElement{
-		Task: task,
+		IsLocked: false,
 
-		IsLocked:    false,
-		JudgementId: task.JudgementId,
-		BlockId:     blockId,
-		TaskId:      task.TaskId,
-		Type:        task.Type,
+		Task:    task,
+		BlockId: blockId,
+		runtime: runtime,
 	}
 
 	pendingTasks <- element
@@ -186,15 +222,15 @@ func (s scheduler) FetchTask(judgementId, taskId, taskType string, ignoreLock bo
 			panic("something wrong")
 		}
 
-		if judgementId != "*" && taskElement.JudgementId != judgementId {
+		if judgementId != "*" && taskElement.runtime.Judgement.JudgementId != judgementId {
 			continue
 		}
 
-		if taskId != "*" && taskElement.TaskId != taskId {
+		if taskId != "*" && taskElement.Task.TaskId != taskId {
 			continue
 		}
 
-		if taskType != "*" && taskElement.Type != taskType {
+		if taskType != "*" && taskElement.Task.Type != taskType {
 			continue
 		}
 
@@ -210,14 +246,14 @@ func (s scheduler) FetchTask(judgementId, taskId, taskType string, ignoreLock bo
 	return nil
 }
 
-func forward(pr *processRuntime) error {
+func forward(runtime *Runtime) error {
 
-	ids := pr.graph.Run()
+	ids := runtime.graph.Run()
 
 	for _, block := range ids {
 		var inputs models.Slots
 		for _, linkId := range block.Inputs {
-			if data, ok := pr.result[linkId]; ok {
+			if data, ok := runtime.result[linkId]; ok {
 				inputs = append(inputs, data)
 			} else {
 				return errors.New("wrong process definition")
@@ -233,13 +269,13 @@ func forward(pr *processRuntime) error {
 			},
 			Type:        block.Type,
 			TaskId:      uuid.New().String(),
-			JudgementId: pr.judgement.JudgementId,
+			JudgementId: runtime.Judgement.JudgementId,
 			Properties:  block.Properties,
 			Inputs:      inputs,
 			Outputs:     models.Slots{},
 		}
 
-		s.PushTask(block.Id, newTask)
+		s.PushTask(block.Id, newTask, runtime)
 	}
 
 	return nil
@@ -247,13 +283,8 @@ func forward(pr *processRuntime) error {
 
 func (s scheduler) FinishTask(element *TaskElement, outputs *models.Slots) error {
 	blockId := element.BlockId
-	pr, ok := s.processes[element.JudgementId]
-	if !ok {
-		s.logger.Error("missing process")
-		s.UnlockTask(element)
-		return errors.New("missing process")
-	}
-	block := pr.graph.FindBlockById(blockId)
+	runtime := element.runtime
+	block := runtime.graph.FindBlockById(blockId)
 
 	if len(block.Output) != len(*outputs) {
 		msg := fmt.Sprintf("output slots mismatch, block %d expects %d but %d",
@@ -265,9 +296,9 @@ func (s scheduler) FinishTask(element *TaskElement, outputs *models.Slots) error
 	}
 
 	for index, output := range *outputs {
-		links := pr.graph.FindLinkBySourcePort(blockId, index)
+		links := runtime.graph.FindLinkBySourcePort(blockId, index)
 		for _, link := range links {
-			pr.result[link.Id] = output
+			runtime.result[link.Id] = output
 		}
 	}
 
@@ -275,14 +306,25 @@ func (s scheduler) FinishTask(element *TaskElement, outputs *models.Slots) error
 
 	s.RemoveTask(element)
 
-	return forward(pr)
+	return forward(runtime)
 }
-func (s scheduler) RemoveTask(element *TaskElement) {
+
+func (s *scheduler) FinishTaskWithError(element *TaskElement, message string) error {
+	element.runtime.Judgement.Msg = message
+	element.runtime.Judgement.Status = models.SystemError
+	element.runtime.Judgement.Score = 0
+
+	s.FinishRuntime(element.runtime)
+
+	return nil
+}
+
+func (s *scheduler) RemoveTask(element *TaskElement) {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	s.logger.Debug("remove task in tasks",
-		zap.String("task id", element.TaskId),
+		zap.String("task id", element.Task.TaskId),
 	)
 
 	for te := s.tasks.Front(); te != nil; te = te.Next() {
@@ -299,19 +341,19 @@ func (s scheduler) RemoveTask(element *TaskElement) {
 	}
 }
 
-func (s scheduler) LockTask(element *TaskElement) bool {
+func (s *scheduler) LockTask(element *TaskElement) bool {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	s.logger.Debug("judgement repository, unlock task",
-		zap.String("judgement id", element.JudgementId),
-		zap.String("task id", element.TaskId),
+		zap.String("judgement id", element.runtime.Judgement.JudgementId),
+		zap.String("task id", element.Task.TaskId),
 	)
 
 	if element.IsLocked {
 		s.logger.Error("lock a task that is locked",
-			zap.String("judgement id", element.JudgementId),
-			zap.String("task id", element.TaskId),
+			zap.String("judgement id", element.runtime.Judgement.JudgementId),
+			zap.String("task id", element.Task.TaskId),
 		)
 		return false
 	}
@@ -320,20 +362,20 @@ func (s scheduler) LockTask(element *TaskElement) bool {
 	return true
 }
 
-func (s scheduler) UnlockTask(element *TaskElement) bool {
+func (s *scheduler) UnlockTask(element *TaskElement) bool {
 
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
 	s.logger.Debug("judgement repository, unlock task",
-		zap.String("judgement id", element.JudgementId),
-		zap.String("task id", element.TaskId),
+		zap.String("judgement id", element.runtime.Judgement.JudgementId),
+		zap.String("task id", element.Task.TaskId),
 	)
 
 	if element.IsLocked == false {
 		s.logger.Error("unlock a task that is not locked",
-			zap.String("judgement id", element.JudgementId),
-			zap.String("task id", element.TaskId),
+			zap.String("judgement id", element.runtime.Judgement.JudgementId),
+			zap.String("task id", element.Task.TaskId),
 		)
 		return false
 	}
@@ -341,10 +383,24 @@ func (s scheduler) UnlockTask(element *TaskElement) bool {
 	return true
 }
 
-func consume() {
+func (s *scheduler) consume() {
 	funcs := []func(element *TaskElement) (bool, error){File, String, Evaluate}
 
 	for element := range pendingTasks {
+
+		if element.Task.Type == "basic/end" {
+			if score, ok := element.Task.Inputs[0].Value.(float64); !ok {
+				element.runtime.Judgement.Msg = "wrong score"
+				element.runtime.Judgement.Status = models.SystemError
+				element.runtime.Judgement.Score = 0
+			} else {
+				element.runtime.Judgement.Msg = ""
+				element.runtime.Judgement.Status = models.Accepted
+				element.runtime.Judgement.Score = score
+			}
+			s.FinishRuntime(element.runtime)
+			continue
+		}
 
 		fmt.Println("element", element)
 		matched := false
@@ -377,15 +433,18 @@ func New(logger *zap.Logger) Scheduler {
 
 	once.Do(func() {
 		s = &scheduler{
-			logger.With(zap.String("type", "scheduler")),
-			&sync.Mutex{},
-			&list.List{},
-			make(map[string]*processRuntime),
+			logger:   logger.With(zap.String("type", "scheduler")),
+			mutex:    &sync.Mutex{},
+			tasks:    &list.List{},
+			runtimes: make(map[*models.Judgement]*Runtime),
+			finished: make(chan *models.Judgement, 64),
 		}
 		go s.releaseTimer()
 	})
 
-	go consume()
+	go s.consume()
 
 	return s
 }
+
+var ProviderSet = wire.NewSet(New)

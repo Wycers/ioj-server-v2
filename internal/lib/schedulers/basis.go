@@ -1,4 +1,4 @@
-package scheduler
+package schedulers
 
 import (
 	"errors"
@@ -10,7 +10,7 @@ import (
 )
 
 func File(element *TaskElement) (bool, error) {
-	if element.Type != "basic/file" {
+	if element.Task.Type != "basic/file" {
 		return false, nil
 	}
 	url, ok := element.Task.Properties["url"]
@@ -27,7 +27,7 @@ func File(element *TaskElement) (bool, error) {
 }
 
 func String(element *TaskElement) (bool, error) {
-	if element.Type != "basic/string" {
+	if element.Task.Type != "basic/string" {
 		return false, nil
 	}
 	str, ok := element.Task.Properties["value"]
@@ -44,7 +44,7 @@ func String(element *TaskElement) (bool, error) {
 }
 
 func Evaluate(element *TaskElement) (bool, error) {
-	if element.Type != "basic/evaluate" {
+	if element.Task.Type != "basic/evaluate" {
 		return false, nil
 	}
 	exp, ok := element.Task.Properties["exp"]
