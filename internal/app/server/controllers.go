@@ -8,6 +8,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/problems"
 	"github.com/infinity-oj/server-v2/internal/app/processes"
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
+	"github.com/infinity-oj/server-v2/internal/app/tasks"
 	"github.com/infinity-oj/server-v2/internal/app/volumes"
 	"github.com/infinity-oj/server-v2/internal/pkg/http"
 	"github.com/infinity-oj/server-v2/internal/pkg/websockets"
@@ -20,6 +21,7 @@ func CreateInitControllersFn(
 	problemsInit problems.InitProblemGroupFn,
 	volumesInit volumes.InitVolumeGroupFn,
 	processesInit processes.InitProcessGroupFn,
+	tasksInit tasks.InitTaskGroupFn,
 
 	websocketInit websockets.InitWebsocketGroupFn,
 ) http.InitControllers {
@@ -35,6 +37,7 @@ func CreateInitControllersFn(
 		problemsInit(v1)
 		volumesInit(v1)
 		processesInit(v1)
+		tasksInit(v1)
 
 		res.LoadHTMLFiles("index.html")
 

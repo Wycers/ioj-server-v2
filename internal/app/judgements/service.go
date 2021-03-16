@@ -2,12 +2,10 @@ package judgements
 
 import (
 	"errors"
-	"fmt"
-	"github.com/google/uuid"
 	"github.com/infinity-oj/server-v2/internal/app/problems"
 	"github.com/infinity-oj/server-v2/internal/app/processes"
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
-	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
+	"github.com/infinity-oj/server-v2/internal/lib/schedulers"
 	"github.com/infinity-oj/server-v2/pkg/models"
 	"go.uber.org/zap"
 	"net/http"
@@ -18,11 +16,6 @@ type Service interface {
 	GetJudgements(accountId uint64) ([]*models.Judgement, error)
 	CreateJudgement(accountId, processId, submissionId uint64) (int, *models.Judgement, error)
 	UpdateJudgement(judgementId string, status models.JudgeStatus, score float64, msg string) (*models.Judgement, error)
-
-	GetTasks(taskType string) (task []*models.Task, err error)
-	GetTask(taskId string) (task *models.Task, err error)
-	UpdateTask(taskId, warning, error string, outputs *models.Slots) (task *models.Task, err error)
-	ReserveTask(taskId string) (token string, locked bool, err error)
 }
 
 type service struct {
@@ -32,139 +25,11 @@ type service struct {
 	submissionRepository submissions.Repository
 	problemRepository    problems.Repository
 
-	scheduler scheduler.Scheduler
+	scheduler schedulers.Scheduler
 }
 
-func (d service) GetTasks(taskType string) (tasks []*models.Task, err error) {
-	d.scheduler.List()
-
-	for {
-		element := d.scheduler.FetchTask("*", "*", "basic/end", true)
-		if element == nil {
-			break
-		}
-		if score, ok := element.Task.Inputs[0].Value.(float64); !ok {
-			d.logger.Error("wrong score", zap.Error(err))
-		} else {
-			if _, err := d.UpdateJudgement(element.JudgementId, models.Accepted, score, ""); err != nil {
-				return nil, err
-			}
-		}
-		err = d.scheduler.FinishTask(element, &models.Slots{})
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	d.logger.Info("get task", zap.String("type", taskType))
-	element := d.scheduler.FetchTask("*", "*", taskType, false)
-	if element != nil {
-		d.logger.Info("get tasks", zap.String("judgement id", element.JudgementId))
-		tasks = []*models.Task{
-			element.Task,
-		}
-	} else {
-		d.logger.Info("get tasks: nothing")
-	}
-	return
-}
-
-func (d service) GetTask(taskId string) (task *models.Task, err error) {
-	d.logger.Info("get task",
-		zap.String("task id", taskId),
-	)
-	element := d.scheduler.FetchTask("*", taskId, "*", true)
-	if element != nil {
-		d.logger.Info("get task",
-			zap.String("judgement id", element.JudgementId),
-			zap.String("task id", element.Task.TaskId),
-		)
-		task = element.Task
-	} else {
-		d.logger.Debug("get tasks: nothing")
-	}
-	return
-}
-
-func (d service) UpdateTask(taskId, warning, error string, outputs *models.Slots) (task *models.Task, err error) {
-	taskElement := d.scheduler.FetchTask("*", taskId, "*", true)
-	if taskElement == nil {
-		d.logger.Debug("invalid token: no such task",
-			zap.String("task id", taskId),
-		)
-		d.scheduler.UnlockTask(taskElement)
-		return nil, errors.New("invalid token")
-	}
-
-	task = taskElement.Task
-
-	if task.TaskId != taskId {
-		d.logger.Debug("task mismatch",
-			zap.String("expected task id", task.TaskId),
-			zap.String("actual task id", taskId),
-		)
-		d.scheduler.UnlockTask(taskElement)
-		return nil, errors.New("task mismatch")
-	}
-
-	d.logger.Info("update task",
-		zap.String("task id", taskId),
-	)
-
-	if error != "" {
-		d.scheduler.RemoveTask(taskElement)
-		_, err := d.UpdateJudgement(taskElement.JudgementId, models.SystemError, 0, fmt.Sprintf("warning: %s\nerror: %s\n", warning, error))
-		if err != nil {
-			d.logger.Error("finish task failed", zap.Error(err))
-			return nil, err
-		}
-		return task, nil
-	}
-
-	//update task
-	//err := d.Repository.Update(element, outputs)
-	//if err != nil {
-	//	d.logger.Error("update task", zap.Error(err))
-	//	return nil, err
-	//}
-
-	err = d.scheduler.FinishTask(taskElement, outputs)
-
-	// calculate next task
-	if err != nil {
-		d.logger.Error("update task: finish task failed",
-			zap.String("task id", taskId),
-			zap.Error(err),
-		)
-		d.scheduler.UnlockTask(taskElement)
-		return nil, err
-	}
-
-	return task, nil
-}
-
-func (d service) ReserveTask(taskId string) (token string, locked bool, err error) {
-	taskElement := d.scheduler.FetchTask("*", taskId, "*", true)
-
-	if taskElement == nil {
-		return "", false, errors.New("not found")
-	}
-
-	if !d.scheduler.LockTask(taskElement) {
-		return "", false, errors.New("participated")
-	}
-
-	token = uuid.New().String()
-	d.logger.Debug("reserve task",
-		zap.String("task id", taskId),
-		zap.String("token", token),
-	)
-
-	return token, true, nil
-}
-
-func (d service) UpdateJudgement(judgementId string, status models.JudgeStatus, score float64, msg string) (*models.Judgement, error) {
-	d.logger.Debug("update judgement",
+func (s service) UpdateJudgement(judgementId string, status models.JudgeStatus, score float64, msg string) (*models.Judgement, error) {
+	s.logger.Debug("update judgement",
 		zap.String("judgement id", judgementId),
 		zap.String("judge status", string(status)),
 		zap.String("msg", msg),
@@ -172,7 +37,7 @@ func (d service) UpdateJudgement(judgementId string, status models.JudgeStatus, 
 	)
 
 	// get judgement with judgementId
-	judgement, err := d.Repository.GetJudgement(judgementId)
+	judgement, err := s.Repository.GetJudgement(judgementId)
 	if err != nil {
 		return nil, err
 	}
@@ -181,13 +46,13 @@ func (d service) UpdateJudgement(judgementId string, status models.JudgeStatus, 
 	judgement.Status = status
 	judgement.Msg = msg
 
-	err = d.Repository.Update(judgement)
+	err = s.Repository.Update(judgement)
 
 	return judgement, err
 }
 
-func (d service) CreateJudgement(accountId, processId, submissionId uint64) (int, *models.Judgement, error) {
-	d.logger.Debug("create judgement",
+func (s service) CreateJudgement(accountId, processId, submissionId uint64) (int, *models.Judgement, error) {
+	s.logger.Debug("create judgement",
 		zap.Uint64("account id", accountId),
 		zap.Uint64("process id", processId),
 		zap.Uint64("submission id", submissionId),
@@ -213,9 +78,9 @@ func (d service) CreateJudgement(accountId, processId, submissionId uint64) (int
 	//}
 
 	// get process
-	process, err := d.processRepository.GetProcess(processId)
+	process, err := s.processRepository.GetProcess(processId)
 	if err != nil {
-		d.logger.Error("create judgement, get process",
+		s.logger.Error("create judgement, get process",
 			zap.Uint64("process id", processId),
 			zap.Error(err),
 		)
@@ -224,14 +89,14 @@ func (d service) CreateJudgement(accountId, processId, submissionId uint64) (int
 	if process == nil {
 		return http.StatusInternalServerError, nil, errors.New("invalid request")
 	}
-	d.logger.Debug("create judgement",
+	s.logger.Debug("create judgement",
 		zap.String("process definition", process.Definition),
 	)
 
 	// get submission
-	submission, err := d.submissionRepository.GetSubmissionById(submissionId)
+	submission, err := s.submissionRepository.GetSubmissionById(submissionId)
 	if err != nil {
-		d.logger.Error("create judgement",
+		s.logger.Error("create judgement",
 			zap.Uint64("submission id", submissionId),
 			zap.Error(err),
 		)
@@ -240,50 +105,63 @@ func (d service) CreateJudgement(accountId, processId, submissionId uint64) (int
 	if submission == nil {
 		return http.StatusBadRequest, nil, errors.New("invalid request")
 	}
-	d.logger.Debug("create judgement",
+	s.logger.Debug("create judgement",
 		zap.String("submission user space", submission.UserVolume),
 	)
 
 	// create judgement
-	judgement, err := d.Repository.Create(submissionId, processId)
+	judgement, err := s.Repository.Create(submissionId, processId)
 	if err != nil {
-		d.logger.Error("create judgement",
+		s.logger.Error("create judgement",
 			zap.Uint64("submission id", submissionId),
 			zap.Uint64("process id", processId),
 			zap.Error(err),
 		)
 		return http.StatusInternalServerError, nil, err
 	}
-	d.logger.Debug("create judgement successfully")
+	s.logger.Debug("create judgement successfully")
 
-	problem, err := d.problemRepository.GetProblemById(submission.ProblemId)
+	problem, err := s.problemRepository.GetProblemById(submission.ProblemId)
 	if err != nil {
 		panic(err)
 	}
-	err = d.scheduler.NewProcessRuntime(problem, submission, judgement, process)
-
+	r, err := s.scheduler.NewRuntime(problem, submission, judgement, process)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
+	err = s.scheduler.PushRuntime(r)
+	if err != nil {
+		return http.StatusInternalServerError, nil, err
+	}
 	return http.StatusOK, judgement, err
 }
 
-func (d service) GetJudgement(judgementId string) (*models.Judgement, error) {
-	judgement, err := d.Repository.GetJudgement(judgementId)
+func (s service) GetJudgement(judgementId string) (*models.Judgement, error) {
+	judgement, err := s.Repository.GetJudgement(judgementId)
 	return judgement, err
 }
 
-func (d service) GetJudgements(accountId uint64) ([]*models.Judgement, error) {
-	judgements, err := d.Repository.GetJudgementsByAccountId(accountId)
+func (s service) GetJudgements(accountId uint64) ([]*models.Judgement, error) {
+	judgements, err := s.Repository.GetJudgementsByAccountId(accountId)
 	return judgements, err
+}
+
+func (s *service) FinishJudgement() {
+	ch := s.scheduler.FinishedJudgement()
+	for {
+		judgement := <-ch
+		_, _ = s.UpdateJudgement(judgement.JudgementId, judgement.Status, judgement.Score, judgement.Msg)
+	}
 }
 
 func NewService(
 	logger *zap.Logger,
+	s schedulers.Scheduler,
 	Repository Repository,
 	ProblemRepository problems.Repository,
 	ProcessRepository processes.Repository,
 	SubmissionRepository submissions.Repository,
 ) Service {
-	s := scheduler.New(logger)
-
 	pendingJudgements, err := Repository.GetPendingJudgements()
 	if err != nil {
 		panic(err)
@@ -319,10 +197,11 @@ func NewService(
 			zap.String("judgement id", judgement.JudgementId),
 			zap.String("submission user space", submission.UserVolume),
 		)
-		err = s.NewProcessRuntime(problem, submission, judgement, process)
+		r, err := s.NewRuntime(problem, submission, judgement, process)
+		s.PushRuntime(r)
 	}
 
-	return &service{
+	srv := &service{
 		logger:               logger.With(zap.String("type", "JudgementService")),
 		Repository:           Repository,
 		processRepository:    ProcessRepository,
@@ -331,4 +210,7 @@ func NewService(
 
 		scheduler: s,
 	}
+	go srv.FinishJudgement()
+
+	return srv
 }
