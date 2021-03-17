@@ -14,6 +14,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/server"
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
 	"github.com/infinity-oj/server-v2/internal/app/tasks"
+	"github.com/infinity-oj/server-v2/internal/app/tasks/ws"
 	"github.com/infinity-oj/server-v2/internal/app/volumes"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/controllers"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/repositories"
@@ -96,7 +97,8 @@ func CreateApp(cf string) (*server.Application, error) {
 	initProcessGroupFn := processes.CreateInitControllersFn(processesController)
 	tasksService := tasks.NewService(logger)
 	tasksController := tasks.NewController(logger, tasksService)
-	initTaskGroupFn := tasks.CreateInitControllersFn(tasksController)
+	hub := ws.NewHub()
+	initTaskGroupFn := tasks.CreateInitControllersFn(tasksController, hub)
 	initWebsocketGroupFn := websockets.CreateInitWebSocketFn()
 	initControllers := server.CreateInitControllersFn(initAccountGroupFn, initJudgementGroupFn, initSubmissionGroupFn, initProblemGroupFn, initVolumeGroupFn, initProcessGroupFn, initTaskGroupFn, initWebsocketGroupFn)
 	configuration, err := jaeger.NewConfiguration(viper, logger)
