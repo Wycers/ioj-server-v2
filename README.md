@@ -6,7 +6,7 @@
       <img alt="GitHub release" src="https://img.shields.io/github/v/release/infinity-oj/server-v2.svg?logo=github&style=for-the-badge" />
     </a>
     <a href="https://github.com/infinity-oj/server-v2/actions/workflows/build.yml">
-       <img alt="Build workflow" src="https://img.shields.io/github/workflow/status/infinity-oj/server-v2/build?logo=github&style=for-the-badge" />
+       <img alt="Build workflow" src="https://img.shields.io/github/workflow/status/infinity-oj/server-v2/Build?logo=github&style=for-the-badge" />
     </a>
   </p>
 </p>
