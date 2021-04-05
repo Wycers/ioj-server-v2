@@ -1,4 +1,7 @@
 # Server-v2
+
+[![Build](https://github.com/infinity-oj/server-v2/actions/workflows/build.yml/badge.svg)](https://github.com/infinity-oj/server-v2/actions/workflows/build.yml)
+
 Server for Infinity OJ
 
 ## Technology Stack
