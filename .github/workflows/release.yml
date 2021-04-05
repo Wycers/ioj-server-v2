@@ -2,31 +2,31 @@ name: Release Go project
 
 on:
   push:
-    tags:
-      - "*"
+    branches: [ master ]
+    # tags:
+    #   - "*"
 
 jobs:
   build:
     name: GoReleaser build
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out code into the Go module directory
+      -
+        name: Checkout
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0 # See: https://goreleaser.com/ci/actions/
-
-      - name: Set up Go 1.15
+          fetch-depth: 0
+      -
+        name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.15
-        id: go
-
-      - name: Install wire
+          go-version: 1.16
+      -
+        name: Install wire
         run: go get github.com/google/wire/cmd/wire
-
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@master
+      -
+        name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v2
         with:
           version: latest
           args: release --rm-dist
