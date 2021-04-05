@@ -2,9 +2,8 @@ name: Release Go project
 
 on:
   push:
-    branches: [ master ]
-    # tags:
-    #   - "*"
+    tags:
+      - "*"
 
 jobs:
   build:
