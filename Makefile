@@ -2,14 +2,14 @@
 
 NOW = $(shell date -u '+%Y%m%d%I%M%S')
 
-RELEASE_VERSION = v0.0.2
+RELEASE_VERSION = $(TAG)
 
 APP 			= ioj-server
 SERVER_BIN  	= ./dist/${APP}
 RELEASE_ROOT 	= release
 RELEASE_SERVER 	= release/${APP}
-GIT_COUNT 		= 1# $(shell git rev-list --all --count)
-GIT_HASH        = asd#$(shell git rev-parse --short HEAD)
+GIT_COUNT 		= $(git rev-list --all --count)
+GIT_HASH        = $(git rev-parse --short "$GITHUB_SHA")
 RELEASE_TAG     = $(RELEASE_VERSION).$(GIT_COUNT).$(GIT_HASH)
 
 all: start
