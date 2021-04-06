@@ -17,14 +17,17 @@
 # Jetbrains template directory
 .idea
 
-# logs
+# Logs
 logs
 
-# dist file
+# Dist file
 dist
 
+# Developer setting
 .vscode
 
-
-# config file
+# Config file
 server.yaml
+
+# MacOS desktop
+.DS_Store
