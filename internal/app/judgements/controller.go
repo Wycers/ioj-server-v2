@@ -59,7 +59,7 @@ func (d *DefaultController) CancelJudgement(c *gin.Context) {
 	}
 	judgement, err = d.service.UpdateJudgement(judgementId, models.Canceled, -1, "User cancel")
 	if err != nil {
-		d.logger.Error("create judgement", zap.Error(err))
+		d.logger.Error("cancel judgement", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"msg": err.Error(),
 		})
@@ -69,7 +69,7 @@ func (d *DefaultController) CancelJudgement(c *gin.Context) {
 }
 
 func (d *DefaultController) CreateJudgement(c *gin.Context) {
-	d.logger.Debug("create judgement")
+	d.logger.Debug("create judgement by process")
 	session := sessions.GetSession(c)
 	if session == nil {
 		d.logger.Debug("get principal failed")
@@ -99,7 +99,7 @@ func (d *DefaultController) CreateJudgement(c *gin.Context) {
 	}
 
 	d.logger.Debug("create judgement",
-		zap.Uint64("processes id", request.ProcessId),
+		zap.Uint64("process id", request.ProcessId),
 		zap.Uint64("submission id", request.SubmissionId),
 	)
 

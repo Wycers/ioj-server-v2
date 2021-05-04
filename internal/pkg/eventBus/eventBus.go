@@ -1,19 +1,24 @@
-package eventBuses
+package eventBus
 
 import (
 	"fmt"
-	"github.com/asaskevich/EventBus"
 	"sync"
+
+	"github.com/asaskevich/EventBus"
 )
 
 var once sync.Once
 
-var bus EventBus.Bus
+type Bus = EventBus.Bus
 
-func New() EventBus.Bus {
+var bus Bus
+
+func New() Bus {
 	once.Do(func() {
+		fmt.Println("???????")
 		bus = EventBus.New()
 	})
+	fmt.Println(&bus)
 	return bus
 }
 

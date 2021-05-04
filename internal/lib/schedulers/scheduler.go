@@ -4,10 +4,13 @@ import (
 	"container/list"
 	"errors"
 	"fmt"
-	"github.com/google/wire"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/infinity-oj/server-v2/internal/pkg/eventBus"
+
+	"github.com/google/wire"
 
 	"github.com/google/uuid"
 
@@ -53,6 +56,8 @@ type scheduler struct {
 	runtimes map[*models.Judgement]*Runtime
 
 	finished chan *models.Judgement
+
+	eventBus eventBus.Bus
 }
 
 func (s *scheduler) FinishRuntime(runtime *Runtime) {
@@ -386,42 +391,47 @@ func (s *scheduler) UnlockTask(element *TaskElement) bool {
 func (s *scheduler) consume() {
 	funcs := []func(element *TaskElement) (bool, error){File, String, Evaluate}
 
-	for element := range pendingTasks {
+	for {
+		select {
+		case element := <-pendingTasks:
 
-		if element.Task.Type == "basic/end" {
-			if score, ok := element.Task.Inputs[0].Value.(float64); !ok {
-				element.runtime.Judgement.Msg = "wrong score"
-				element.runtime.Judgement.Status = models.SystemError
-				element.runtime.Judgement.Score = 0
-			} else {
-				element.runtime.Judgement.Msg = ""
-				element.runtime.Judgement.Status = models.Accepted
-				element.runtime.Judgement.Score = score
-			}
-			s.FinishRuntime(element.runtime)
-			continue
-		}
-
-		fmt.Println("element", element)
-		matched := false
-		for _, f := range funcs {
-			var err error
-			matched, err = f(element)
-			fmt.Println(err)
-			if matched {
-				break
-			}
-		}
-		if matched {
-			err := s.FinishTask(element, &element.Task.Outputs)
-			if err != nil {
-				fmt.Println(err)
+			if element.Task.Type == "basic/end" {
+				if score, ok := element.Task.Inputs[0].Value.(float64); !ok {
+					element.runtime.Judgement.Msg = "wrong score"
+					element.runtime.Judgement.Status = models.SystemError
+					element.runtime.Judgement.Score = 0
+				} else {
+					element.runtime.Judgement.Msg = ""
+					element.runtime.Judgement.Status = models.Accepted
+					element.runtime.Judgement.Score = score
+				}
+				s.FinishRuntime(element.runtime)
 				continue
 			}
-			continue
-		}
 
-		s.tasks.PushBack(element)
+			fmt.Println("element", element)
+			matched := false
+			for _, f := range funcs {
+				var err error
+				matched, err = f(element)
+				fmt.Println(err)
+				if matched {
+					break
+				}
+			}
+			if matched {
+				err := s.FinishTask(element, &element.Task.Outputs)
+				if err != nil {
+					fmt.Println(err)
+					continue
+				}
+				continue
+			}
+
+			s.tasks.PushBack(element)
+			fmt.Println("publish!", &s.eventBus)
+			s.eventBus.Publish("task:new", element.Task)
+		}
 	}
 }
 
@@ -430,6 +440,7 @@ var once sync.Once
 
 func New(logger *zap.Logger) Scheduler {
 	pendingTasks = make(chan *TaskElement, 128)
+	bus := eventBus.New()
 
 	once.Do(func() {
 		s = &scheduler{
@@ -438,6 +449,7 @@ func New(logger *zap.Logger) Scheduler {
 			tasks:    &list.List{},
 			runtimes: make(map[*models.Judgement]*Runtime),
 			finished: make(chan *models.Judgement, 64),
+			eventBus: bus,
 		}
 		go s.releaseTimer()
 	})

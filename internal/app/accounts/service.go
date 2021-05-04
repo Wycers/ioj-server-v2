@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"errors"
+
 	"github.com/infinity-oj/server-v2/internal/pkg/crypto"
 	"github.com/infinity-oj/server-v2/internal/pkg/utils/random"
 	"github.com/infinity-oj/server-v2/pkg/models"
@@ -29,10 +30,10 @@ type DefaultService struct {
 }
 
 func (s *DefaultService) UpdateCredential(username, oldPassword, newPassword string) (res bool, err error) {
-	s.logger.Debug("verify credential", zap.String("username", username))
+	s.logger.Debug("update credential", zap.String("username", username))
 	u := new(models.Credential)
 	if u, err = s.Repository.QueryCredential(username); err != nil {
-		s.logger.Error("verify credential error", zap.Error(err))
+		s.logger.Error("update credential error", zap.Error(err))
 		return false, err
 	}
 	if u == nil {

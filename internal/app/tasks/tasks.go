@@ -8,11 +8,10 @@ import (
 
 type InitTaskGroupFn func(r *gin.RouterGroup)
 
-
 func CreateInitControllersFn(jc Controller, hub *ws.Hub) InitTaskGroupFn {
 	return func(r *gin.RouterGroup) {
 		taskGroup := r.Group("/task")
-		//taskGroup.GET("/", jc.GetTasks)
+		taskGroup.GET("/", jc.GetTasks)
 		//taskGroup.GET("/:taskId", jc.GetTask)
 		//
 		//// Reserve and judge this task

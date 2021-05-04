@@ -6,7 +6,6 @@ import (
 )
 
 type InitJudgementGroupFn func(r *gin.RouterGroup)
-type InitTaskGroupFn func(r *gin.RouterGroup)
 
 func CreateInitControllersFn(jc Controller) InitJudgementGroupFn {
 	return func(r *gin.RouterGroup) {
@@ -15,7 +14,6 @@ func CreateInitControllersFn(jc Controller) InitJudgementGroupFn {
 		judgementGroup.POST("/", jc.CreateJudgement)
 		judgementGroup.GET("/:judgementId", jc.GetJudgement)
 		judgementGroup.POST("/:judgementId/cancel", jc.CancelJudgement)
-
 	}
 }
 

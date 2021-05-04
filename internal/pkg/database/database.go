@@ -48,10 +48,10 @@ func New(o *Options) (*gorm.DB, error) {
 		&models.Problem{},
 		&models.Judgement{},
 		&models.Task{},
+		&models.Volume{},
 		&models.Submission{},
 		&models.Process{},
 		&models.Role{},
-		&models.Volume{},
 		&models.Group{},
 		&models.UserGroupCorrelation{},
 	)

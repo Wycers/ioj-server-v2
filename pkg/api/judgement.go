@@ -8,7 +8,7 @@ import (
 )
 
 type JudgementAPI interface {
-	Create(problemId, volume string) (*models.Judgement, error)
+	Create(processId, submissionId uint64) (*models.Judgement, error)
 	QueryJudgements() ([]*models.Judgement, error)
 	QueryJudgement(judgementId string) (*models.Judgement, error)
 	CancelJudgement(judgementId string) (*models.Judgement, error)
@@ -60,22 +60,23 @@ func (s *judgementService) QueryJudgements() ([]*models.Judgement, error) {
 	return response, nil
 }
 
-func (s *judgementService) Create(problemId, volume string) (*models.Judgement, error) {
+func (s *judgementService) Create(processId, submissionId uint64) (*models.Judgement, error) {
 
 	request := map[string]interface{}{
-		"problemId": problemId,
-		"volume":    volume,
+		"processId":    processId,
+		"submissionId": submissionId,
 	}
 
 	response := &models.Judgement{}
 
-	_, err := s.client.R().
+	resp, err := s.client.R().
 		SetBody(request).
 		SetResult(response).
 		Post("/judgement")
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(resp.String())
 
 	return response, nil
 }
