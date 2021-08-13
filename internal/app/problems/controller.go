@@ -14,12 +14,58 @@ type Controller interface {
 	CreateProblem(c *gin.Context)
 	GetProblems(c *gin.Context)
 	GetProblem(c *gin.Context)
+	GetPage(c *gin.Context)
 	UpdateProblem(c *gin.Context)
 }
 
 type DefaultController struct {
 	logger  *zap.Logger
 	service Service
+}
+
+func (pc *DefaultController) GetPage(c *gin.Context) {
+	name := c.Param("name")
+
+	request := struct {
+		Locale     string `form:"locale"`
+	}{
+		Locale: "*",
+	}
+
+	if err := c.ShouldBindQuery(&request); err != nil {
+		errs, ok := err.(validator.ValidationErrors)
+		if !ok {
+			c.JSON(http.StatusOK, gin.H{
+				"msg": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg": errs.Error(),
+		})
+		return
+	}
+	locale := request.Locale
+
+	pc.logger.Debug("get page",
+		zap.String("page name", name),
+		zap.String("locale", locale),
+	)
+
+	page, err := pc.service.GetPage(name, locale)
+	if err != nil {
+		pc.logger.Error("get page", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+	if page == nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	c.JSON(http.StatusOK, page)
 }
 
 func (pc *DefaultController) CreateProblem(c *gin.Context) {

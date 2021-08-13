@@ -11,6 +11,7 @@ func CreateInitControllersFn(pc Controller) InitProblemGroupFn {
 	return func(r *gin.RouterGroup) {
 		r.GET("/problem", pc.GetProblems)
 		r.GET("/problem/:name", pc.GetProblem)
+		r.GET("/problem/:name/page", pc.GetPage)
 		r.POST("/problem", pc.CreateProblem)
 		r.PUT("/problem/:name", pc.UpdateProblem)
 	}

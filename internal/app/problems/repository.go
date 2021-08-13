@@ -11,6 +11,7 @@ type Repository interface {
 	CreateProblem(name, title string) (p *models.Problem, err error)
 	UpdateProblem(p *models.Problem) error
 	CreatePage(problemId uint64, locale, title, description string) (p *models.Page, err error)
+	GetPage(problemId uint64, locale string) (p *models.Page, err error)
 
 	GetProblemById(id uint64) (*models.Problem, error)
 	GetProblemByName(name string) (p *models.Problem, err error)
@@ -22,6 +23,21 @@ type Repository interface {
 type DefaultRepository struct {
 	logger *zap.Logger
 	db     *gorm.DB
+}
+
+func (m DefaultRepository) GetPage(problemId uint64, locale string) (p *models.Page, err error) {
+	if locale == "*" {
+		locale = ""
+	}
+	p = &models.Page{}
+	if err = m.db.Where(&models.Page{ProblemId: problemId, Locale: locale}).First(p).Error; err != nil {
+		if gorm.IsRecordNotFoundError(err) {
+			return nil, nil
+		}
+		m.logger.Error("Query page failed", zap.Uint64("problem id", problemId), zap.Error(err))
+		return nil, err
+	}
+	return p, nil
 }
 
 func (m DefaultRepository) GetProblemById(id uint64) (p *models.Problem, err error) {

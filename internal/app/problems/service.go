@@ -11,11 +11,25 @@ type Service interface {
 	GetProblemById(id uint64) (p *models.Problem, err error)
 	GetProblemByName(name string) (p *models.Problem, err error)
 	GetProblems(page, pageSize int) (res []*models.Problem, err error)
+
+	GetPage(name, locale string) (p *models.Page, err error)
 }
 
 type service struct {
 	logger     *zap.Logger
 	Repository Repository
+}
+
+func (s service) GetPage(name, locale string) (p *models.Page, err error) {
+	problem, err := s.GetProblemByName(name)
+	if err != nil {
+		return nil, err
+	}
+	page, err := s.Repository.GetPage(problem.ID, locale)
+	if err != nil {
+		return nil, err
+	}
+	return page, nil
 }
 
 func (s service) GetProblemById(id uint64) (p *models.Problem, err error) {
