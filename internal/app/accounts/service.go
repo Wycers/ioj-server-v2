@@ -2,6 +2,7 @@ package accounts
 
 import (
 	"errors"
+	"regexp"
 
 	"github.com/infinity-oj/server-v2/internal/pkg/crypto"
 	"github.com/infinity-oj/server-v2/internal/pkg/utils/random"
@@ -85,6 +86,9 @@ func (s *DefaultService) UpdateAccount(account *models.Account, nickname, email,
 
 func (s *DefaultService) CreateAccount(username, password, email string) (account *models.Account, err error) {
 	s.logger.Debug("create account", zap.String("username", username))
+	if ok, _ := regexp.MatchString("[a-zA-Z0-9]{6,}", username); !ok {
+		return nil, errors.New("invalid username")
+	}
 	{
 		account, err := s.GetAccount(username)
 		if err != nil {
