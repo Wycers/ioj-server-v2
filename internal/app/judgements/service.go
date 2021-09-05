@@ -5,7 +5,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/problems"
 	"github.com/infinity-oj/server-v2/internal/app/processes"
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
-	"github.com/infinity-oj/server-v2/internal/lib/schedulers"
+	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
 	"github.com/infinity-oj/server-v2/pkg/models"
 	"go.uber.org/zap"
 	"net/http"
@@ -25,7 +25,7 @@ type service struct {
 	submissionRepository submissions.Repository
 	problemRepository    problems.Repository
 
-	scheduler schedulers.Scheduler
+	scheduler scheduler.Scheduler
 }
 
 func (s service) UpdateJudgement(judgementId string, status models.JudgeStatus, score float64, msg string) (*models.Judgement, error) {
@@ -156,7 +156,7 @@ func (s *service) FinishJudgement() {
 
 func NewService(
 	logger *zap.Logger,
-	s schedulers.Scheduler,
+	s scheduler.Scheduler,
 	Repository Repository,
 	ProblemRepository problems.Repository,
 	ProcessRepository processes.Repository,

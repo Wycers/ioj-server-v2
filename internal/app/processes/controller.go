@@ -13,12 +13,19 @@ import (
 
 type Controller interface {
 	CreateProcess(c *gin.Context)
+	GetJudgementPrerequisites(c *gin.Context)
 	GetProcess(c *gin.Context)
 }
 
 type DefaultController struct {
 	logger  *zap.Logger
 	service Service
+}
+
+func (pc *DefaultController) GetJudgementPrerequisites(c *gin.Context) {
+	c.JSON(200, &gin.H{
+		"upload": "*.cpp,*.c,*.py,*.zip",
+	})
 }
 
 func (pc *DefaultController) CreateProcess(c *gin.Context) {

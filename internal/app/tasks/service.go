@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/infinity-oj/server-v2/internal/lib/schedulers"
+	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
 	"github.com/infinity-oj/server-v2/pkg/models"
 	"go.uber.org/zap"
 )
@@ -19,7 +19,7 @@ type Service interface {
 type service struct {
 	logger *zap.Logger
 
-	scheduler schedulers.Scheduler
+	scheduler scheduler.Scheduler
 }
 
 func (d service) GetTasks(taskType string) (tasks []*models.Task, err error) {
@@ -136,7 +136,7 @@ func (d service) ReserveTask(taskId string) (token string, locked bool, err erro
 func NewService(
 	logger *zap.Logger,
 ) Service {
-	s := schedulers.New(logger)
+	s := scheduler.New(logger)
 
 	return &service{
 		logger: logger.With(zap.String("type", "Task service")),
