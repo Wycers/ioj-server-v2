@@ -6,7 +6,7 @@ import (
 	"github.com/google/wire"
 	"github.com/infinity-oj/server-v2/internal/app/accounts"
 	"github.com/infinity-oj/server-v2/internal/app/tasks"
-	"github.com/infinity-oj/server-v2/internal/lib/schedulers"
+	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
 	"github.com/infinity-oj/server-v2/internal/pkg/websockets"
 
 	"github.com/infinity-oj/server-v2/internal/app/judgements"
@@ -41,7 +41,7 @@ var providerSet = wire.NewSet(
 	volumes.ProviderSet,
 	tasks.ProviderSet,
 
-	schedulers.ProviderSet,
+	scheduler.ProviderSet,
 )
 
 func CreateApp(cf string) (*server.Application, error) {

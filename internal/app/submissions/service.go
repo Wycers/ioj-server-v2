@@ -8,8 +8,8 @@ import (
 
 	//"github.com/infinity-oj/server-v2/internal/app/judgements"
 	"github.com/infinity-oj/server-v2/internal/app/problems"
+	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
 
-	"github.com/infinity-oj/server-v2/internal/lib/schedulers"
 	"github.com/infinity-oj/server-v2/pkg/models"
 )
 
@@ -25,7 +25,7 @@ type service struct {
 	ProblemRepository    problems.Repository
 	//JudgementService     judgements.Service
 
-	scheduler schedulers.Scheduler
+	scheduler scheduler.Scheduler
 }
 
 func (d service) GetSubmissions(problemId string, page, pageSize int) (res []*models.Submission, err error) {
@@ -90,6 +90,6 @@ func NewService(
 		ProblemRepository:    problemsRepository,
 		//JudgementService:     judgementsService,
 
-		scheduler: schedulers.New(logger),
+		scheduler: scheduler.New(logger),
 	}
 }

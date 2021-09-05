@@ -20,7 +20,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/volumes/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/services"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/storages"
-	"github.com/infinity-oj/server-v2/internal/lib/schedulers"
+	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
 	"github.com/infinity-oj/server-v2/internal/pkg/configs"
 	"github.com/infinity-oj/server-v2/internal/pkg/database"
 	"github.com/infinity-oj/server-v2/internal/pkg/files"
@@ -65,7 +65,7 @@ func CreateApp(cf string) (*server.Application, error) {
 	service := accounts.NewService(logger, repository)
 	controller := accounts.NewController(logger, service)
 	initAccountGroupFn := accounts.CreateInitControllersFn(controller)
-	scheduler := schedulers.New(logger)
+	scheduler := scheduler.New(logger)
 	judgementsRepository := judgements.NewRepository(logger, db)
 	problemsRepository := problems.NewRepository(logger, db)
 	processesRepository := processes.NewRepository(logger, db)
@@ -123,4 +123,4 @@ func CreateApp(cf string) (*server.Application, error) {
 
 // wire.go:
 
-var providerSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, http.ProviderSet, database.ProviderSet, jaeger.ProviderSet, files.ProviderSet, websockets.ProviderSet, server.ProviderSet, accounts.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, processes.ProviderSet, volumes.ProviderSet, tasks.ProviderSet, schedulers.ProviderSet)
+var providerSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, http.ProviderSet, database.ProviderSet, jaeger.ProviderSet, files.ProviderSet, websockets.ProviderSet, server.ProviderSet, accounts.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, processes.ProviderSet, volumes.ProviderSet, tasks.ProviderSet, scheduler.ProviderSet)
