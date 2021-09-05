@@ -15,6 +15,7 @@ import (
 type Controller interface {
 	CreateJudgement(c *gin.Context)
 	GetJudgements(c *gin.Context)
+	GetJudgementPrerequisites(c *gin.Context)
 	GetJudgement(c *gin.Context)
 	CancelJudgement(c *gin.Context)
 }
@@ -22,6 +23,12 @@ type Controller interface {
 type DefaultController struct {
 	logger  *zap.Logger
 	service Service
+}
+
+func (d *DefaultController) GetJudgementPrerequisites(c *gin.Context) {
+	c.JSON(200, &gin.H{
+		"upload": "*.cpp,*.c,*.py,*.zip",
+	})
 }
 
 func (d *DefaultController) CancelJudgement(c *gin.Context) {

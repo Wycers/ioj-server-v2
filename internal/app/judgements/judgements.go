@@ -9,6 +9,9 @@ type InitJudgementGroupFn func(r *gin.RouterGroup)
 
 func CreateInitControllersFn(jc Controller) InitJudgementGroupFn {
 	return func(r *gin.RouterGroup) {
+		processGroup := r.Group("/process")
+		processGroup.GET("/:processId/prerequisites", jc.GetJudgementPrerequisites)
+
 		judgementGroup := r.Group("/judgement")
 		judgementGroup.GET("/", jc.GetJudgements)
 		judgementGroup.POST("/", jc.CreateJudgement)
