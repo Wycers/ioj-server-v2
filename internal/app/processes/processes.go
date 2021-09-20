@@ -9,8 +9,10 @@ type InitProcessGroupFn func(r *gin.RouterGroup)
 
 func CreateInitControllersFn(pc Controller) InitProcessGroupFn {
 	return func(r *gin.RouterGroup) {
-		r.GET("/process/:id", pc.GetProcess)
-		r.POST("/process", pc.CreateProcess)
+		processGroup := r.Group("/process")
+		processGroup.GET("/:id", pc.GetProcess)
+		processGroup.GET("/:id/prerequisites", pc.GetJudgementPrerequisites)
+		processGroup.POST("/", pc.CreateProcess)
 	}
 }
 
