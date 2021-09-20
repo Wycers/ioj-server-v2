@@ -2,18 +2,20 @@ package judgements
 
 import (
 	"errors"
+	"net/http"
+
 	"github.com/infinity-oj/server-v2/internal/app/problems"
 	"github.com/infinity-oj/server-v2/internal/app/processes"
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
 	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
 	"github.com/infinity-oj/server-v2/pkg/models"
 	"go.uber.org/zap"
-	"net/http"
 )
 
 type Service interface {
 	GetJudgement(judgementId string) (*models.Judgement, error)
 	GetJudgements(accountId uint64) ([]*models.Judgement, error)
+	GetJudgementPrerequisites(processId uint64) (string, error)
 	CreateJudgement(accountId, processId, submissionId uint64) (int, *models.Judgement, error)
 	UpdateJudgement(judgementId string, status models.JudgeStatus, score float64, msg string) (*models.Judgement, error)
 }
@@ -26,6 +28,10 @@ type service struct {
 	problemRepository    problems.Repository
 
 	scheduler scheduler.Scheduler
+}
+
+func (s service) GetJudgementPrerequisites(processId uint64) (string, error) {
+	return "upload:*.cpp,*.c,*.py,*.zip", nil
 }
 
 func (s service) UpdateJudgement(judgementId string, status models.JudgeStatus, score float64, msg string) (*models.Judgement, error) {

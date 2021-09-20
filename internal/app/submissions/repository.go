@@ -16,6 +16,8 @@ type Repository interface {
 	GetSubmission(submissionId string) (*models.Submission, error)
 	GetSubmissionById(id uint64) (*models.Submission, error)
 	GetSubmissions(offset, limit int, problemId string) ([]*models.Submission, error)
+	// TODO: Improve this...
+	GetSubmissionsByAccount(offset, limit int, accountId uint64) ([]*models.Submission, error)
 	Create(submitterID, problemId uint64, userSpace string) (s *models.Submission, err error)
 	Update(s *models.Submission) error
 }
@@ -25,6 +27,15 @@ type repository struct {
 	db     *gorm.DB
 	queue  *list.List
 	mutex  *sync.Mutex
+}
+
+func (m repository) GetSubmissionsByAccount(offset, limit int, accountId uint64) (res []*models.Submission, err error) {
+	if err = m.db.Model(&models.Submission{}).Where("submitter_id = ?", accountId).
+		Offset(offset).Limit(limit).
+		Find(&res).Error; err != nil {
+		return nil, err
+	}
+	return
 }
 
 func (m repository) GetSubmissionById(id uint64) (*models.Submission, error) {
