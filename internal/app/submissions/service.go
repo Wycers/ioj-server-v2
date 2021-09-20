@@ -17,6 +17,7 @@ type Service interface {
 	Create(submitterID uint64, problemName string, userSpace string) (code int, s *models.Submission, j *models.Judgement, err error)
 	GetSubmission(submissionId string) (s *models.Submission, err error)
 	GetSubmissions(problemId string, page, pageSize int) (res []*models.Submission, err error)
+	GetSubmissionsByAccountId(accountId uint64, page, pageSize int) (res []*models.Submission, err error)
 }
 
 type service struct {
@@ -26,6 +27,16 @@ type service struct {
 	//JudgementService     judgements.Service
 
 	scheduler scheduler.Scheduler
+}
+
+func (d service) GetSubmissionsByAccountId(accountId uint64, page, pageSize int) (res []*models.Submission, err error) {
+	offset := (page - 1) * pageSize
+	res, err = d.SubmissionRepository.GetSubmissionsByAccount(offset, pageSize, accountId)
+	if err != nil {
+		d.logger.Error("get submissions", zap.Uint64("account id", accountId), zap.Error(err))
+		return nil, err
+	}
+	return
 }
 
 func (d service) GetSubmissions(problemId string, page, pageSize int) (res []*models.Submission, err error) {

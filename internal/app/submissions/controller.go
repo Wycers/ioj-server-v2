@@ -73,6 +73,15 @@ func (d *controller) CreateSubmission(c *gin.Context) {
 }
 
 func (d *controller) GetSubmissions(c *gin.Context) {
+	d.logger.Debug("get submissions")
+	session := sessions.GetSession(c)
+	if session == nil {
+		d.logger.Debug("get principal failed")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	d.logger.Debug("get submissions", zap.Uint64("account id", session.AccountId))
+
 	request := struct {
 		ProblemId int `form:"problemId"`
 
@@ -97,6 +106,16 @@ func (d *controller) GetSubmissions(c *gin.Context) {
 		return
 	}
 
+	submissions, err := d.service.GetSubmissionsByAccountId(session.AccountId, request.Page, request.PageSize)
+	if err != nil {
+		d.logger.Error("get submissions",
+			zap.Uint64("account id", session.AccountId),
+			zap.Error(err),
+		)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	c.JSON(200, submissions)
 }
 
 func (d *controller) GetSubmission(c *gin.Context) {

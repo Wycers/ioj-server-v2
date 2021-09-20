@@ -27,7 +27,7 @@ func (pc *DefaultController) GetPage(c *gin.Context) {
 	name := c.Param("name")
 
 	request := struct {
-		Locale     string `form:"locale"`
+		Locale string `form:"locale"`
 	}{
 		Locale: "*",
 	}
@@ -135,7 +135,7 @@ func (pc *DefaultController) GetProblems(c *gin.Context) {
 		zap.Int("pageSize", request.PageSize),
 	)
 
-	problem, err := pc.service.GetProblems(request.Page, request.PageSize)
+	problems, err := pc.service.GetProblems(request.Page, request.PageSize)
 	if err != nil {
 		pc.logger.Error("get account", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -143,11 +143,11 @@ func (pc *DefaultController) GetProblems(c *gin.Context) {
 		})
 		return
 	}
-	if problem == nil {
+	if problems == nil {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
-	c.JSON(http.StatusOK, problem)
+	c.JSON(http.StatusOK, problems)
 }
 
 func (pc *DefaultController) GetProblem(c *gin.Context) {
