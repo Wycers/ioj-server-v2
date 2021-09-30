@@ -2,13 +2,12 @@ package database
 
 import (
 	"github.com/google/wire"
+	"github.com/infinity-oj/server-v2/pkg/models"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
-
-	"github.com/infinity-oj/server-v2/pkg/models"
 )
 
 // Options is  configuration of database
@@ -41,20 +40,22 @@ func New(o *Options) (*gorm.DB, error) {
 		db = db.Debug()
 	}
 
+	//db.AutoMigrate(
+	//	&models.Credential{},
+	//	&models.Account{},
+	//	&models.Page{},
+	//	&models.Problem{},
+	//	&models.Judgement{},
+	//	&models.Task{},
+	//	&models.Volume{},
+	//	&models.Submission{},
+	//	&models.Process{},
+	//	&models.Role{},
+	//	&models.Group{},
+	//	&models.UserGroupCorrelation{},
+	//)
 	db.AutoMigrate(
-		&models.Credential{},
-		&models.Account{},
-		&models.Page{},
-		&models.Problem{},
-		&models.Judgement{},
-		&models.Task{},
-		&models.Volume{},
-		&models.Submission{},
-		&models.Process{},
-		&models.Role{},
-		&models.Group{},
-		&models.UserGroupCorrelation{},
-	)
+		&models.Process{})
 
 	return db, nil
 }

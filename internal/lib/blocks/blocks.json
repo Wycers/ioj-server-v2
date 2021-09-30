@@ -1,0 +1,167 @@
+
+[
+    {
+        "name": "text",
+        "title": "Text",
+        "family": "Animations",
+        "description": "Show text",
+        "fields": [
+            {
+                "name": "text",
+                "label": "Text",
+                "type": "string",
+                "attr": "property"
+            },
+            {
+                "name": "delay",
+                "label": "Delay (s)",
+                "type": "number",
+                "attr": "property"
+            },
+            {
+                "name": "Show",
+                "type": "event",
+                "attr": "input"
+            },
+            {
+                "name": "Hide",
+                "type": "event",
+                "attr": "input"
+            },
+            {
+                "name": "onShow",
+                "type": "event",
+                "attr": "output"
+            },
+            {
+                "name": "onHide",
+                "type": "event",
+                "attr": "output"
+            }
+        ]
+    },
+    {
+        "name": "animation",
+        "title": "Animation",
+        "family": "Animations",
+        "description": "Show animation",
+        "fields": [
+            {
+                "name": "animation",
+                "label": "Animation",
+                "type": "animation",
+                "attr": "property"
+            },
+            {
+                "name": "Play",
+                "type": "event",
+                "attr": "input"
+            },
+            {
+                "name": "Stop",
+                "type": "event",
+                "attr": "input"
+            },
+            {
+                "name": "onEnd",
+                "type": "event",
+                "attr": "output"
+            }
+        ]
+    },
+    {
+        "name": "Chat message",
+        "family": "Events",
+        "description": "",
+        "fields": [
+            {
+                "name": "message",
+                "label": "Activation message",
+                "type": "string",
+                "attr": "property"
+            },
+            {
+                "name": "onMessage",
+                "type": "event",
+                "attr": "output"
+            }
+        ]
+    },
+    {
+        "name": "delay",
+        "title": "Delay",
+        "family": "Time",
+        "description": "",
+        "fields": [
+            {
+                "name": "delay",
+                "label": "Delay (s)",
+                "type": "number",
+                "attr": "property",
+                "value": 1
+            },
+            {
+                "name": "input",
+                "type": "event",
+                "attr": "input"
+            },
+            {
+                "name": "output",
+                "type": "event",
+                "attr": "output"
+            }
+        ]
+    },
+    {
+        "name": "shortcuts",
+        "title": "Shortcuts",
+        "family": "Events",
+        "description": "Press shortcut for call event",
+        "fields": [
+            {
+                "name": "keys",
+                "label": "Activation keys",
+                "type": "keys",
+                "attr": "property"
+            },
+            {
+                "name": "onPress",
+                "type": "event",
+                "attr": "output"
+            }
+        ]
+    },
+    {
+        "name": "splitter",
+        "title": "Splitter",
+        "family": "Helpers",
+        "description": "Press shortcut for call event",
+        "fields": [
+            {
+                "name": "input",
+                "type": "event",
+                "attr": "input"
+            },
+            {
+                "name": "output",
+                "type": "event",
+                "attr": "output"
+            },
+            {
+                "name": "output",
+                "type": "event",
+                "attr": "output"
+            },
+            {
+                "name": "output",
+                "type": "event",
+                "attr": "output"
+            },
+            {
+                "name": "output",
+                "type": "event",
+                "attr": "output"
+            }
+        ]
+    }
+]

@@ -1,6 +1,8 @@
 package redis
 
 import (
+	"fmt"
+
 	redis "github.com/go-redis/redis/v8"
 	"github.com/google/wire"
 	"github.com/infinity-oj/server-v2/internal/pkg/errors"
@@ -8,22 +10,21 @@ import (
 	"go.uber.org/zap"
 )
 
-// Options is  configuration of database
+// Options is configuration of database
 type Options struct {
-	Address  string `yaml:"address"`
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
-	Debug    bool
+	Address  string `mapstructure:"addr"`
+	Username string
+	Password string
 }
 
 func NewOptions(v *viper.Viper, logger *zap.Logger) (*Options, error) {
 	var err error
 	o := new(Options)
-	if err = v.UnmarshalKey("db", o); err != nil {
-		return nil, errors.Wrap(err, "unmarshal db option error")
+	if err = v.UnmarshalKey("redis", o); err != nil {
+		return nil, errors.Wrap(err, "unmarshal redis options error")
 	}
 
-	logger.Info("load database options success", zap.String("url", o.URL))
+	logger.Info("load redis options success", zap.String("address", o.Address))
 
 	return o, err
 }
@@ -36,6 +37,8 @@ func New(o *Options) *redis.Client {
 		Username: o.Username,
 		Password: o.Password,
 	})
+
+	fmt.Println(o.Address)
 
 	return client
 }

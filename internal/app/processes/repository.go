@@ -31,9 +31,9 @@ func (m repository) GetProcess(id uint64) (p *models.Process, err error) {
 
 func (m repository) CreateProcess(definition string) (process *models.Process, err error) {
 	process = &models.Process{
-		FileIoInputName:  "",
-		FileIoOutputName: "",
-		Definition:       definition,
+		//FileIoInputName:  "",
+		//FileIoOutputName: "",
+		Definition: definition,
 	}
 	if err = m.db.Create(process).Error; err != nil {
 		m.logger.Error("create process", zap.String("definition", definition))

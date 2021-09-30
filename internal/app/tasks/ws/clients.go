@@ -161,7 +161,7 @@ func (c *User) writePump() {
 					fmt.Println("show task with error", err)
 					return
 				} else {
-					fmt.Println("show task")
+					fmt.Println("show task", task.TaskId)
 				}
 			}
 		case <-ticker.C:
@@ -174,7 +174,7 @@ func (c *User) writePump() {
 	}
 }
 
-// ServeW handles websocket requests from the peer.
+// ServeWs handles websocket requests from the peer.
 func (hub *Hub) ServeWs(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

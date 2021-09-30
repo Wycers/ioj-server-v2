@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-// Init 初始化viper
+// New 初始化viper
 func New(path string) (*viper.Viper, error) {
 	var (
 		err error
