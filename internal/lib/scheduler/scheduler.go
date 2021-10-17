@@ -6,12 +6,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/infinity-oj/server-v2/internal/lib/nodeengine/scene"
+
 	"github.com/infinity-oj/server-v2/internal/app/processes"
 
 	"github.com/google/uuid"
 	"github.com/google/wire"
 
-	"github.com/infinity-oj/server-v2/internal/lib/nodeEngine"
+	"github.com/infinity-oj/server-v2/internal/lib/nodeengine"
 
 	"go.uber.org/zap"
 
@@ -24,7 +26,7 @@ type Runtime struct {
 	Submission *models.Submission
 	Judgement  *models.Judgement
 
-	graph  *nodeEngine.Graph
+	graph  *nodeengine.Graph
 	result map[int]*models.Slot
 }
 
@@ -42,11 +44,12 @@ func (s *Scheduler) Execute() {
 	defer func() {
 		s.C <- code
 	}()
+	s.logger.Debug("scheduler: execution started")
 	trigger := make(chan int, 100)
 	pendingCnt := 0
+	wg := new(sync.WaitGroup)
 
 	trigger <- 0
-	s.logger.Debug("scheduler execute blueprint")
 	for _ = range trigger {
 		s.logger.Debug("scheduler", zap.Int("pending count", pendingCnt))
 
@@ -57,7 +60,7 @@ func (s *Scheduler) Execute() {
 				if data, ok := s.Runtime.result[linkId]; ok {
 					inputs = append(inputs, data)
 				} else {
-					s.logger.Error("wrong process definition")
+					s.logger.Error("wrong process definition", zap.Int("link id", linkId))
 					code = -1
 					return
 				}
@@ -78,11 +81,13 @@ func (s *Scheduler) Execute() {
 				Outputs:     models.Slots{},
 			}
 
-			go func(block *nodeEngine.Block) {
-				pendingCnt++
+			pendingCnt++
+			wg.Add(1)
+			go func(block *nodeengine.Block) {
+				s.logger.Debug("process started", zap.String("process id", newProcess.ProcessId))
 				select {
 				case outputs := <-processes.GetManager().Push(block.Id, newProcess):
-					s.logger.Debug("process finished")
+					s.logger.Debug("process finished normally", zap.String("process id", newProcess.ProcessId))
 
 					blockId := block.Id
 					if len(block.Output) != len(*outputs) {
@@ -101,19 +106,22 @@ func (s *Scheduler) Execute() {
 						}
 					}
 					block.Done()
-
 					trigger <- pendingCnt
 				case <-time.After(time.Second * 5):
-					s.logger.Debug("process timeout after 5s")
+					s.logger.Debug("process timeout after 5s", zap.String("process id", newProcess.ProcessId))
+					if pendingCnt == 1 {
+						s.logger.Debug("pending count is 0, closing")
+						close(trigger)
+					}
 				}
+				s.logger.Debug("process ended", zap.String("process id", newProcess.ProcessId))
 				pendingCnt--
+				wg.Done()
 			}(block)
 		}
-
-		if pendingCnt == 0 {
-			break
-		}
 	}
+	s.logger.Debug("scheduler: execution ended")
+	wg.Wait()
 }
 
 func (s *Scheduler) OnFinish() <-chan int {
@@ -121,7 +129,8 @@ func (s *Scheduler) OnFinish() <-chan int {
 }
 
 func New(logger *zap.Logger,
-	problem *models.Problem, submission *models.Submission, judgement *models.Judgement, blueprint *models.Blueprint,
+	problem *models.Problem, submission *models.Submission, judgement *models.Judgement,
+	blueprint *models.Blueprint, programs []*models.Program,
 ) (*Scheduler, error) {
 	blueprintId := blueprint.ID
 
@@ -131,7 +140,13 @@ func New(logger *zap.Logger,
 		definition = strings.ReplaceAll(definition, "<publicVolume>", problem.PublicVolume)
 		definition = strings.ReplaceAll(definition, "<privateVolume>", problem.PrivateVolume)
 	}
-	graph, err := nodeEngine.NewGraphByDefinition(definition)
+	//graph, err := nodeengine.NewGraphByDefinition(definition)
+	var bs []*scene.BlockDefinition
+	for _, p := range programs {
+		bs = append(bs, scene.NewBlockDefinition(p.Definition))
+	}
+	s := scene.NewScene(blueprint.Definition)
+	graph, err := nodeengine.NewGraphByScene(bs, s)
 	if err != nil {
 		logger.Error("parse blueprint definition failed",
 			zap.Uint64("blueprint id", blueprintId),

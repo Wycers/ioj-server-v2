@@ -1,4 +1,4 @@
-package blocks
+package scene
 
 import (
 	"encoding/json"
@@ -7,13 +7,14 @@ import (
 
 type V struct {
 	Label string      `json:"label"`
+	Name  string      `json:"name"`
 	Type  string      `json:"type"`
 	Value interface{} `json:"value,omitempty"`
 }
 
 type Attribute = map[string]V
 
-type Block struct {
+type BlockInstance struct {
 	ID         int                  `json:"id"`
 	Name       string               `json:"name"`
 	Title      string               `json:"title"`
@@ -29,11 +30,11 @@ type Link struct {
 }
 
 type Scene struct {
-	Blocks []Block `json:"blocks"`
-	Links  []Link  `json:"links"`
+	Blocks []BlockInstance `json:"blocks"`
+	Links  []Link          `json:"links"`
 }
 
-func New(jsonStr string) *Scene {
+func NewScene(jsonStr string) *Scene {
 	jsonBytes := []byte(jsonStr)
 	scene := new(Scene)
 	err := json.Unmarshal(jsonBytes, &scene)

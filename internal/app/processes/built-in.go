@@ -42,6 +42,23 @@ func String(element *ProcessElement) (bool, error) {
 	}
 	return true, nil
 }
+func ConstString(element *ProcessElement) (bool, error) {
+	if element.Process.Type != "const_string" {
+		return false, nil
+	}
+	str, ok := element.Process.Properties["value"]
+	fmt.Println(element.Process.Properties)
+	if !ok {
+		return true, errors.New("no value")
+	}
+	element.Process.Outputs = models.Slots{
+		&models.Slot{
+			Type:  "string",
+			Value: str,
+		},
+	}
+	return true, nil
+}
 
 func Evaluate(element *ProcessElement) (bool, error) {
 	if element.Process.Type != "basic/evaluate" {

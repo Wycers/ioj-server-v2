@@ -127,6 +127,11 @@ func (m *manager) Fetch(judgementId, processId, processType string, ignoreLock b
 }
 
 func (m *manager) Finish(element *ProcessElement, outputs *models.Slots) error {
+	m.logger.Debug("finish process ",
+		zap.String("process id", element.Process.ProcessId),
+		zap.String("process type", element.Process.Type),
+	)
+
 	m.remove(element)
 	element.C <- outputs
 	return nil
@@ -182,12 +187,18 @@ func (m *manager) consume() {
 			//	continue
 			//}
 
-			fmt.Println("element", element)
+			fmt.Println("new element", element.Process)
+			m.logger.Debug("consume element",
+				zap.String("process id", element.Process.ProcessId),
+				zap.String("process type", element.Process.Type),
+			)
 			matched := false
-			for _, f := range []func(element *ProcessElement) (bool, error){File, String, Evaluate} {
+			for _, f := range []func(element *ProcessElement) (bool, error){File, String, Evaluate, ConstString} {
 				var err error
 				matched, err = f(element)
-				fmt.Println(err)
+				if err != nil {
+					m.logger.Error("consume", zap.Error(err))
+				}
 				if matched {
 					break
 				}
@@ -195,8 +206,7 @@ func (m *manager) consume() {
 			if matched {
 				err := m.Finish(element, &element.Process.Outputs)
 				if err != nil {
-					fmt.Println(err)
-					continue
+					m.logger.Error("consume", zap.Error(err))
 				}
 				continue
 			}
@@ -206,17 +216,17 @@ func (m *manager) consume() {
 	}
 }
 
-var instance ProcessManager
+var instance *manager
 var once *sync.Once
 
-func GetManager() ProcessManager {
+func GetManager() *manager {
 	if instance == nil {
 		panic("manage is nil")
 	}
 	return instance
 }
 
-func NewManager(logger *zap.Logger) ProcessManager {
+func NewManager(logger *zap.Logger) *manager {
 	once = &sync.Once{}
 	once.Do(func() {
 		instance = &manager{
@@ -225,6 +235,7 @@ func NewManager(logger *zap.Logger) ProcessManager {
 			processes:        list.New(),
 			pendingProcesses: make(chan *ProcessElement, 128),
 		}
+		go instance.consume()
 	})
 	return instance
 }

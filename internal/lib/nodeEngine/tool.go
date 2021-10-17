@@ -1,9 +1,11 @@
-package nodeEngine
+package nodeengine
 
 import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+
+	"github.com/infinity-oj/server-v2/internal/lib/nodeengine/scene"
 )
 
 type Node struct {
@@ -32,6 +34,67 @@ func NewGraphByFile(filename string) (*Graph, error) {
 	}
 
 	return NewGraphByDefinition(string(data))
+}
+
+func NewGraphByScene(bs []*scene.BlockDefinition, s *scene.Scene) (*Graph, error) {
+	graph := New()
+
+	blockMap := make(map[string]*scene.BlockDefinition)
+
+	for _, b := range bs {
+		blockMap[b.Name] = b
+	}
+
+	for _, v := range s.Blocks {
+
+		inputCounts := 0
+		outputCounts := 0
+		if b, ok := blockMap[v.Name]; ok {
+			for _, field := range b.Fields {
+				if field.Attr == "input" {
+					inputCounts++
+				}
+				if field.Attr == "output" {
+					outputCounts++
+				}
+			}
+		}
+
+		var inputs []int
+		for i := 0; i < inputCounts; i++ {
+			for _, link := range s.Links {
+				if link.TargetID == v.ID && link.TargetSlot == i {
+					inputs = append(inputs, link.ID)
+				}
+			}
+		}
+
+		var outputs [][]int
+		for i := 0; i < outputCounts; i++ {
+			outputs = append(outputs, []int{})
+		}
+
+		block := graph.AddBlock(v.ID, v.Name, nil, inputs, outputs)
+
+		for k, attr := range v.Attributes["property"] {
+			if attr.Value == nil {
+				continue
+			}
+			block.setProperty(k, attr.Value)
+		}
+	}
+
+	for _, v := range s.Links {
+		graph.AddLink(
+			v.ID,
+			v.OriginID,
+			v.OriginSlot,
+			v.TargetID,
+			v.TargetSlot,
+		)
+	}
+
+	return graph, nil
 }
 
 func NewGraphByDefinition(definition string) (*Graph, error) {

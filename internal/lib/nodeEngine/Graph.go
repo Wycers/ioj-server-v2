@@ -1,4 +1,4 @@
-package nodeEngine
+package nodeengine
 
 import (
 	"fmt"
@@ -32,7 +32,7 @@ type Link struct {
 	IsReady bool
 }
 
-func (b *Block) setProperty(key string, value string) {
+func (b *Block) setProperty(key string, value interface{}) {
 	if b.Properties == nil {
 		b.Properties = make(map[string]interface{})
 	}
@@ -125,7 +125,7 @@ func (g *Graph) Run() []*Block {
 		for _, inputLink := range block.Inputs {
 			link := g.findLinkById(inputLink)
 			if link == nil {
-				panic("Wrong file")
+				panic("wrong file")
 			}
 
 			source := g.FindBlockById(link.Source.Id)

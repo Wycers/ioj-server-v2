@@ -3,6 +3,8 @@ package judgements
 import (
 	"sync"
 
+	"github.com/infinity-oj/server-v2/internal/app/programs"
+
 	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
 
 	"go.uber.org/zap"
@@ -26,6 +28,7 @@ type dispatcher struct {
 	pr     problems.Repository
 	sr     submissions.Repository
 	jr     Repository
+	pgr    programs.Repository
 }
 
 func (d *dispatcher) PushJudgement(judgement *models.Judgement) {
@@ -110,8 +113,13 @@ func (d *dispatcher) run() {
 
 		d.logger.Debug("create judgement instances", zap.Any("instances", instances))
 
+		programs, err := d.pgr.GetPrograms()
+		if err != nil {
+			// TODO
+		}
 		s, err := scheduler.New(d.logger,
-			instances.problem, instances.submission, instances.judgement, instances.blueprint,
+			instances.problem, instances.submission, instances.judgement,
+			instances.blueprint, programs,
 		)
 		if err != nil {
 			d.logger.Error("create scheduler error", zap.Error(err))
@@ -132,7 +140,8 @@ func GetDispatcher() Dispatcher {
 	return instance
 }
 
-func InitDispatcher(logger *zap.Logger, br blueprints.Repository, pr problems.Repository, sr submissions.Repository, jr Repository) Dispatcher {
+func InitDispatcher(logger *zap.Logger, pr problems.Repository, sr submissions.Repository, jr Repository,
+	br blueprints.Repository, pgr programs.Repository) Dispatcher {
 	once.Do(func() {
 		instance = &dispatcher{
 			c:      make(chan *models.Judgement),
@@ -141,6 +150,7 @@ func InitDispatcher(logger *zap.Logger, br blueprints.Repository, pr problems.Re
 			pr:     pr,
 			sr:     sr,
 			jr:     jr,
+			pgr:    pgr,
 		}
 
 		go instance.run()

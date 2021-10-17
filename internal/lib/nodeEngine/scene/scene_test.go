@@ -1,4 +1,4 @@
-package blocks
+package scene
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	t.Run("New", func(t *testing.T) {
+	t.Run("NewScene", func(t *testing.T) {
 
 		body, err := os.ReadFile("scene.json")
 		if err != nil {
@@ -16,9 +16,8 @@ func TestNew(t *testing.T) {
 		}
 		sceneJSONStr := string(body)
 
-		scene := New(sceneJSONStr)
+		scene := NewScene(sceneJSONStr)
 		fmt.Println(scene)
-
 		//fmt.Println(string(body))
 	})
 }
