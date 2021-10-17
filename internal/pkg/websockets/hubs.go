@@ -14,7 +14,7 @@ type Hub struct {
 
 	judgeStatusTopics map[string]*broadcastSubject
 
-	taskTopics map[string]*unicastSubject
+	processTopics map[string]*unicastSubject
 
 	// Inbound messages from the clients.
 	broadcast chan []byte

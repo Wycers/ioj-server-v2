@@ -6,7 +6,6 @@ import (
 
 var configFile = flag.String("f", "configs/server.yaml", "set config file which viper will loading.")
 
-
 // @title ioj-server
 // @version 0.0.2
 // @description API server for infinity-oj

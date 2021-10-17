@@ -28,7 +28,7 @@ func NewOptions(v *viper.Viper, logger *zap.Logger) (*Options, error) {
 	return o, err
 }
 
-// Init 初始化数据库
+// New 初始化数据库
 func New(o *Options) (*gorm.DB, error) {
 	var err error
 	db, err := gorm.Open("postgres", o.URL)
@@ -40,22 +40,21 @@ func New(o *Options) (*gorm.DB, error) {
 		db = db.Debug()
 	}
 
-	//db.AutoMigrate(
-	//	&models.Credential{},
-	//	&models.Account{},
-	//	&models.Page{},
-	//	&models.Problem{},
-	//	&models.Judgement{},
-	//	&models.Task{},
-	//	&models.Volume{},
-	//	&models.Submission{},
-	//	&models.Process{},
-	//	&models.Role{},
-	//	&models.Group{},
-	//	&models.UserGroupCorrelation{},
-	//)
 	db.AutoMigrate(
-		&models.Process{})
+		//&models.Account{},
+		//&models.Credential{},
+		//&models.Problem{},
+		//&models.Page{},
+		//&models.Submission{},
+		//&models.Volume{},
+		//&models.Role{},
+		//&models.Program{},
+		//&models.Blueprint{},
+		&models.Judgement{},
+		//&models.Process{},
+		//&models.Group{},
+		//&models.UserGroupCorrelation{},
+	)
 
 	return db, nil
 }

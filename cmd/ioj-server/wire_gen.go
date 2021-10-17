@@ -9,13 +9,13 @@ package main
 import (
 	"github.com/google/wire"
 	"github.com/infinity-oj/server-v2/internal/app/accounts"
+	"github.com/infinity-oj/server-v2/internal/app/blueprints"
 	"github.com/infinity-oj/server-v2/internal/app/judgements"
 	"github.com/infinity-oj/server-v2/internal/app/problems"
 	"github.com/infinity-oj/server-v2/internal/app/processes"
+	"github.com/infinity-oj/server-v2/internal/app/programs"
 	"github.com/infinity-oj/server-v2/internal/app/server"
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
-	"github.com/infinity-oj/server-v2/internal/app/tasks"
-	"github.com/infinity-oj/server-v2/internal/app/tasks/ws"
 	"github.com/infinity-oj/server-v2/internal/app/volumes"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/controllers"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/repositories"
@@ -66,12 +66,12 @@ func CreateApp(cf string) (*server.Application, error) {
 	service := accounts.NewService(logger, repository)
 	controller := accounts.NewController(logger, service)
 	initAccountGroupFn := accounts.CreateInitControllersFn(controller)
-	schedulerScheduler := scheduler.New(logger)
 	judgementsRepository := judgements.NewRepository(logger, db)
+	blueprintsRepository := blueprints.NewRepository(logger, db)
 	problemsRepository := problems.NewRepository(logger, db)
-	processesRepository := processes.NewRepository(logger, db)
 	submissionsRepository := submissions.NewRepository(logger, db)
-	judgementsService := judgements.NewService(logger, schedulerScheduler, judgementsRepository, problemsRepository, processesRepository, submissionsRepository)
+	dispatcher := judgements.InitDispatcher(logger, blueprintsRepository, problemsRepository, submissionsRepository, judgementsRepository)
+	judgementsService := judgements.NewService(logger, judgementsRepository, blueprintsRepository, dispatcher)
 	judgementsController := judgements.NewController(logger, judgementsService)
 	initJudgementGroupFn := judgements.CreateInitControllersFn(judgementsController)
 	submissionsService := submissions.NewService(logger, submissionsRepository, problemsRepository)
@@ -93,15 +93,19 @@ func CreateApp(cf string) (*server.Application, error) {
 	servicesService := services.NewVolumeService(logger, storage, repositoriesRepository)
 	controllersController := controllers.New(logger, servicesService)
 	initVolumeGroupFn := volumes.CreateInitControllersFn(controllersController)
-	processesService := processes.NewService(logger, processesRepository)
+	programsRepository := programs.NewRepository(logger, db)
+	programsService := programs.NewService(logger, programsRepository)
+	programsController := programs.NewController(logger, programsService)
+	initProgramGroupFn := programs.CreateInitControllersFn(programsController)
+	manager := processes.NewManager(logger)
+	processesService := processes.NewService(logger, manager)
 	processesController := processes.NewController(logger, processesService)
 	initProcessGroupFn := processes.CreateInitControllersFn(processesController)
-	tasksService := tasks.NewService(logger)
-	tasksController := tasks.NewController(logger, tasksService)
-	hub := ws.NewHub()
-	initTaskGroupFn := tasks.CreateInitControllersFn(tasksController, hub)
+	blueprintsService := blueprints.NewService(logger, blueprintsRepository)
+	blueprintsController := blueprints.NewController(logger, blueprintsService)
+	initBlueprintGroupFn := blueprints.CreateInitControllersFn(blueprintsController)
 	initWebsocketGroupFn := websockets.CreateInitWebSocketFn()
-	initControllers := server.CreateInitControllersFn(initAccountGroupFn, initJudgementGroupFn, initSubmissionGroupFn, initProblemGroupFn, initVolumeGroupFn, initProcessGroupFn, initTaskGroupFn, initWebsocketGroupFn)
+	initControllers := server.CreateInitControllersFn(initAccountGroupFn, initJudgementGroupFn, initSubmissionGroupFn, initProblemGroupFn, initVolumeGroupFn, initProgramGroupFn, initProcessGroupFn, initBlueprintGroupFn, initWebsocketGroupFn)
 	configuration, err := jaeger.NewConfiguration(viper, logger)
 	if err != nil {
 		return nil, err
@@ -124,4 +128,4 @@ func CreateApp(cf string) (*server.Application, error) {
 
 // wire.go:
 
-var providerSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, http.ProviderSet, database.ProviderSet, jaeger.ProviderSet, files.ProviderSet, websockets.ProviderSet, server.ProviderSet, accounts.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, processes.ProviderSet, volumes.ProviderSet, tasks.ProviderSet, scheduler.ProviderSet)
+var providerSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, http.ProviderSet, database.ProviderSet, jaeger.ProviderSet, files.ProviderSet, websockets.ProviderSet, server.ProviderSet, accounts.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, programs.ProviderSet, blueprints.ProviderSet, volumes.ProviderSet, processes.ProviderSet, scheduler.ProviderSet)

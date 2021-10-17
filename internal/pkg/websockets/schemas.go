@@ -9,9 +9,9 @@ type JudgeEnd struct {
 type ActuatorStatus struct {
 }
 
-// ActuatorFetchTask defines messages for actuators to fetch tasks.
-type ActuatorFetchTask struct {
+// ActuatorFetchProcess defines messages for actuators to fetch processes.
+type ActuatorFetchProcess struct {
 }
 
-type ActuatorReturnTask struct {
+type ActuatorReturnProcess struct {
 }

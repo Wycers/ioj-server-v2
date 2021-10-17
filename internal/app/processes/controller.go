@@ -2,7 +2,8 @@ package processes
 
 import (
 	"net/http"
-	"strconv"
+
+	"github.com/infinity-oj/server-v2/pkg/models"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/infinity-oj/server-v2/internal/pkg/sessions"
@@ -12,9 +13,10 @@ import (
 )
 
 type Controller interface {
-	CreateProcess(c *gin.Context)
-	GetJudgementPrerequisites(c *gin.Context)
+	GetProcesses(c *gin.Context)
 	GetProcess(c *gin.Context)
+	UpdateProcess(c *gin.Context)
+	ReserveProcess(c *gin.Context)
 }
 
 type DefaultController struct {
@@ -22,23 +24,82 @@ type DefaultController struct {
 	service Service
 }
 
-func (pc *DefaultController) GetJudgementPrerequisites(c *gin.Context) {
-	c.JSON(200, &gin.H{
-		"upload": "*.cpp,*.c,*.py,*.zip",
-	})
+func (d *DefaultController) GetProcesses(c *gin.Context) {
+	request := struct {
+		Type string `form:"type" binding:"required,gt=0"`
+	}{}
+
+	if err := c.ShouldBindQuery(&request); err != nil {
+		errs, ok := err.(validator.ValidationErrors)
+		if !ok {
+			c.JSON(http.StatusOK, gin.H{
+				"msg": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg": errs.Error(),
+		})
+		return
+	}
+
+	d.logger.Debug("get processes",
+		zap.String("page", request.Type),
+	)
+
+	processes, err := d.service.GetProcesses(request.Type)
+	if err != nil {
+		d.logger.Error("get processes", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+	c.JSON(http.StatusOK, processes)
 }
 
-func (pc *DefaultController) CreateProcess(c *gin.Context) {
+func (d *DefaultController) GetProcess(c *gin.Context) {
+	processId := c.Param("processId")
+
+	d.logger.Debug("get process", zap.String("process processId", processId))
+
+	process, err := d.service.GetProcess(processId)
+	if err != nil {
+		d.logger.Error("get process", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+	if process == nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	c.JSON(http.StatusOK, process)
+}
+
+func (d *DefaultController) UpdateProcess(c *gin.Context) {
 	session := sessions.GetSession(c)
 	if session == nil {
-		pc.logger.Debug("get principal failed")
+		d.logger.Debug("get principal failed")
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
-	pc.logger.Debug("create process", zap.Uint64("account id", session.AccountId))
+	processId := c.Param("processId")
+
+	d.logger.Debug("update process",
+		zap.Uint64("account id", session.AccountId),
+		zap.String("process id", processId),
+	)
+
 	request := struct {
-		Definition string `json:"definition" binding:"required,gt=0"`
+		Token   string `json:"token" binding:"required"`
+		Warning string `json:"warning" binding:""`
+		Error   string `json:"error" binding:""`
+
+		Outputs models.Slots `json:"outputs" binding:"required"`
 	}{}
 
 	if err := c.ShouldBind(&request); err != nil {
@@ -55,36 +116,45 @@ func (pc *DefaultController) CreateProcess(c *gin.Context) {
 		})
 		return
 	}
-	problem, err := pc.service.CreateProcess(request.Definition)
+	d.logger.Debug("update process",
+		zap.String("token", request.Token),
+		zap.String("warning", request.Warning),
+		zap.String("error", request.Error),
+	)
+
+	process, err := d.service.UpdateProcess(processId, request.Warning, request.Error, &request.Outputs)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusInternalServerError, &gin.H{
-			"message": err.Error(),
+		d.logger.Error("update process", zap.Error(err))
+
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"msg": err.Error(),
 		})
 		return
 	}
-
-	c.JSON(http.StatusOK, problem)
+	c.JSON(200, process)
 }
 
-func (pc *DefaultController) GetProcess(c *gin.Context) {
+func (d *DefaultController) ReserveProcess(c *gin.Context) {
+	processId := c.Param("processId")
 
-	id, err := strconv.ParseUint(c.Param("id"), 10, 64)
+	d.logger.Debug("reserve process", zap.String("process processId", processId))
 
-	pc.logger.Debug("get process", zap.Uint64("problem name", id))
-
-	problem, err := pc.service.GetProcess(id)
-	if err != nil {
-		pc.logger.Error("get account", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"message": err.Error(),
-		})
+	token, locked, err := d.service.ReserveProcess(processId)
+	if !locked {
+		if err != nil {
+			d.logger.Error("reserve process failed", zap.Error(err))
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"message": err.Error(),
+			})
+			return
+		}
+		d.logger.Error("reserve process failed: locked before")
+		c.Status(http.StatusPreconditionFailed)
 		return
 	}
-	if problem == nil {
-		c.AbortWithStatus(http.StatusNotFound)
-		return
-	}
-	c.JSON(http.StatusOK, problem)
+	c.JSON(http.StatusOK, gin.H{
+		"token": token,
+	})
 }
 
 func NewController(logger *zap.Logger, s Service) Controller {

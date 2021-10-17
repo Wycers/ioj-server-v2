@@ -119,7 +119,7 @@ func (m DefaultRepository) CreatePage(problemId uint64, locale, title, descripti
 
 func NewRepository(logger *zap.Logger, db *gorm.DB) Repository {
 	return &DefaultRepository{
-		logger: logger.With(zap.String("type", "Repository")),
+		logger: logger.With(zap.String("type", "repository")),
 		db:     db,
 	}
 }

@@ -123,7 +123,7 @@ func (s *DefaultService) VerifyCredential(username, password string) (isValid bo
 }
 func NewService(logger *zap.Logger, Repository Repository) Service {
 	return &DefaultService{
-		logger:     logger.With(zap.String("type", "Account Repository")),
+		logger:     logger.With(zap.String("type", "Account repository")),
 		Repository: Repository,
 	}
 }

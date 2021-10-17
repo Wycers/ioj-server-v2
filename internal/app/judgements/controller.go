@@ -68,8 +68,13 @@ func (d *DefaultController) CancelJudgement(c *gin.Context) {
 	c.JSON(200, judgement)
 }
 
+type Arg struct {
+	Key   string      `json:"key"`
+	Value interface{} `json:"value"`
+}
+
 func (d *DefaultController) CreateJudgement(c *gin.Context) {
-	d.logger.Debug("create judgement by process")
+	d.logger.Debug("create judgement by blueprint")
 	session := sessions.GetSession(c)
 	if session == nil {
 		d.logger.Debug("get principal failed")
@@ -79,8 +84,8 @@ func (d *DefaultController) CreateJudgement(c *gin.Context) {
 	d.logger.Debug("create judgement", zap.Uint64("account id", session.AccountId))
 
 	request := struct {
-		ProcessId    uint64 `json:"processId" binding:"required"`
-		SubmissionId uint64 `json:"submissionId" binding:"required"`
+		BlueprintId uint64                 `json:"blueprintId" binding:"required"`
+		Args        map[string]interface{} `json:"args"`
 	}{}
 
 	if err := c.ShouldBind(&request); err != nil {
@@ -99,11 +104,11 @@ func (d *DefaultController) CreateJudgement(c *gin.Context) {
 	}
 
 	d.logger.Debug("create judgement",
-		zap.Uint64("process id", request.ProcessId),
-		zap.Uint64("submission id", request.SubmissionId),
+		zap.Uint64("blueprint id", request.BlueprintId),
+		//zap.Uint64("submission id", request.SubmissionId),
 	)
 
-	code, judgement, err := d.service.CreateJudgement(session.AccountId, request.ProcessId, request.SubmissionId)
+	code, judgement, err := d.service.CreateJudgement(session.AccountId, request.BlueprintId, request.Args)
 	if err != nil {
 		d.logger.Error("create judgement", zap.Error(err))
 		c.JSON(code, gin.H{

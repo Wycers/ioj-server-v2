@@ -4,11 +4,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 	"github.com/infinity-oj/server-v2/internal/app/accounts"
+	"github.com/infinity-oj/server-v2/internal/app/blueprints"
 	"github.com/infinity-oj/server-v2/internal/app/judgements"
 	"github.com/infinity-oj/server-v2/internal/app/problems"
 	"github.com/infinity-oj/server-v2/internal/app/processes"
+	"github.com/infinity-oj/server-v2/internal/app/programs"
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
-	"github.com/infinity-oj/server-v2/internal/app/tasks"
 	"github.com/infinity-oj/server-v2/internal/app/volumes"
 	"github.com/infinity-oj/server-v2/internal/pkg/http"
 	"github.com/infinity-oj/server-v2/internal/pkg/websockets"
@@ -20,8 +21,9 @@ func CreateInitControllersFn(
 	submissionsInit submissions.InitSubmissionGroupFn,
 	problemsInit problems.InitProblemGroupFn,
 	volumesInit volumes.InitVolumeGroupFn,
+	programsInit programs.InitProgramGroupFn,
 	processesInit processes.InitProcessGroupFn,
-	tasksInit tasks.InitTaskGroupFn,
+	blueprintsInit blueprints.InitBlueprintGroupFn,
 
 	websocketInit websockets.InitWebsocketGroupFn,
 ) http.InitControllers {
@@ -36,8 +38,9 @@ func CreateInitControllersFn(
 		submissionsInit(v1)
 		problemsInit(v1)
 		volumesInit(v1)
+		programsInit(v1)
 		processesInit(v1)
-		tasksInit(v1)
+		blueprintsInit(v1)
 
 		res.LoadHTMLFiles("index.html")
 

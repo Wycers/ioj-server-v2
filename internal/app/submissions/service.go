@@ -84,7 +84,7 @@ func (d service) Create(submitterID uint64, problemName, userSpace string) (code
 		return http.StatusInternalServerError, nil, nil, err
 	}
 	code = http.StatusOK
-	//code, j, err = d.JudgementService.CreateJudgement(submitterID, problem.ProcessId, s.ID)
+	//code, j, err = d.JudgementService.CreateJudgement(submitterID, problem.ProgramId, s.ID)
 	return
 }
 
@@ -99,8 +99,5 @@ func NewService(
 		logger:               logger.With(zap.String("type", "service")),
 		SubmissionRepository: repository,
 		ProblemRepository:    problemsRepository,
-		//JudgementService:     judgementsService,
-
-		scheduler: scheduler.New(logger),
 	}
 }

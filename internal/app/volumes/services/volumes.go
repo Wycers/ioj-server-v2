@@ -106,7 +106,7 @@ func (d DefaultService) GetVolumeFileRecords(volume *models.Volume, filePath str
 	//		}
 	//	}
 	//}
-	//baseVolume, err := d.Repository.GetVolumeByID(volume.Base)
+	//baseVolume, err := d.repository.GetVolumeByID(volume.Base)
 	//if err != nil {
 	//	return nil, err
 	//}

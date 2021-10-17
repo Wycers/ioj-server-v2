@@ -14,7 +14,7 @@ type Repository interface {
 	GetJudgement(judgementId string) (*models.Judgement, error)
 	GetJudgementsByAccountId(accountId uint64) ([]*models.Judgement, error)
 	GetPendingJudgements() ([]*models.Judgement, error)
-	Create(submissionId, processId uint64) (*models.Judgement, error)
+	Create(blueprintId uint64, args map[string]interface{}) (*models.Judgement, error)
 	Update(judgement *models.Judgement) error
 }
 
@@ -54,11 +54,10 @@ func (m repository) GetJudgementsByAccountId(accountId uint64) (judgements []*mo
 			Model: models.Model{
 				CreatedAt: res.Judgement.CreatedAt,
 			},
-			SubmissionId: res.SubmissionId,
-			ProcessId:    res.ProcessId,
-			JudgementId:  res.JudgementId,
-			Status:       res.Status,
-			Score:        res.Score,
+			BlueprintId: res.BlueprintId,
+			JudgementId: res.JudgementId,
+			Status:      res.Status,
+			Score:       res.Score,
 		})
 
 	}
@@ -79,14 +78,14 @@ func (m repository) GetJudgement(judgementId string) (*models.Judgement, error) 
 	return judgement, nil
 }
 
-func (m repository) Create(submissionId, processId uint64) (*models.Judgement, error) {
+func (m repository) Create(blueprintId uint64, args map[string]interface{}) (*models.Judgement, error) {
 	judgementId := uuid.New().String()
 	judgement := &models.Judgement{
-		SubmissionId: submissionId,
-		ProcessId:    processId,
-		JudgementId:  judgementId,
-		Status:       models.Pending,
-		Score:        -1,
+		JudgementId: judgementId,
+		BlueprintId: blueprintId,
+		Args:        args,
+		Status:      models.Pending,
+		Score:       -1,
 	}
 
 	err := m.db.Save(&judgement).Error
@@ -104,7 +103,7 @@ func (m repository) Update(judgement *models.Judgement) error {
 
 func NewRepository(logger *zap.Logger, db *gorm.DB) Repository {
 	return &repository{
-		logger: logger.With(zap.String("type", "Repository")),
+		logger: logger.With(zap.String("type", "repository")),
 		db:     db,
 	}
 }

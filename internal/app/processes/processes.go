@@ -7,17 +7,15 @@ import (
 
 type InitProcessGroupFn func(r *gin.RouterGroup)
 
-func CreateInitControllersFn(pc Controller) InitProcessGroupFn {
+func CreateInitControllersFn(jc Controller) InitProcessGroupFn {
 	return func(r *gin.RouterGroup) {
 		processGroup := r.Group("/process")
-		processGroup.GET("/:id", pc.GetProcess)
-		processGroup.GET("/:id/prerequisites", pc.GetJudgementPrerequisites)
-		processGroup.POST("/", pc.CreateProcess)
+		processGroup.GET("/", jc.GetProcesses)
 	}
 }
 
 var ProviderSet = wire.NewSet(CreateInitControllersFn,
 	NewController,
 	NewService,
-	NewRepository,
+	NewManager,
 )

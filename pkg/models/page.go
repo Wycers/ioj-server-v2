@@ -3,11 +3,11 @@ package models
 type Page struct {
 	Model
 
-	ProblemId uint64 `json:"problemId" gorm:"index: problem_id"`
+	ProblemId uint64 `json:"problemId"`
 
-	Locale string `json:"locale" gorm:"index: locale"`
+	Locale string `json:"locale"`
 
-	Title       string `json:"title" gorm:"index: title; not null"` // title
+	Title       string `json:"title" gorm:"not null"` // title
 	Description string `json:"description"`
 
 	InputFormat  string `json:"input_format"`

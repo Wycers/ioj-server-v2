@@ -8,7 +8,7 @@ import (
 )
 
 type JudgementAPI interface {
-	Create(processId, submissionId uint64) (*models.Judgement, error)
+	Create(programId, submissionId uint64) (*models.Judgement, error)
 	QueryJudgements() ([]*models.Judgement, error)
 	QueryJudgement(judgementId string) (*models.Judgement, error)
 	CancelJudgement(judgementId string) (*models.Judgement, error)
@@ -60,10 +60,10 @@ func (s *judgementService) QueryJudgements() ([]*models.Judgement, error) {
 	return response, nil
 }
 
-func (s *judgementService) Create(processId, submissionId uint64) (*models.Judgement, error) {
+func (s *judgementService) Create(programId, submissionId uint64) (*models.Judgement, error) {
 
 	request := map[string]interface{}{
-		"processId":    processId,
+		"programId":    programId,
 		"submissionId": submissionId,
 	}
 

@@ -4,10 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/infinity-oj/server-v2/internal/app/problems"
-	"github.com/infinity-oj/server-v2/internal/app/processes"
-	"github.com/infinity-oj/server-v2/internal/app/submissions"
-	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
+	"github.com/infinity-oj/server-v2/internal/app/blueprints"
 	"github.com/infinity-oj/server-v2/pkg/models"
 	"go.uber.org/zap"
 )
@@ -15,22 +12,20 @@ import (
 type Service interface {
 	GetJudgement(judgementId string) (*models.Judgement, error)
 	GetJudgements(accountId uint64) ([]*models.Judgement, error)
-	GetJudgementPrerequisites(processId uint64) (string, error)
-	CreateJudgement(accountId, processId, submissionId uint64) (int, *models.Judgement, error)
+	GetJudgementPrerequisites(blueprintId uint64) (string, error)
+	CreateJudgement(accountId, blueprintId uint64, args map[string]interface{}) (int, *models.Judgement, error)
 	UpdateJudgement(judgementId string, status models.JudgeStatus, score float64, msg string) (*models.Judgement, error)
 }
 
 type service struct {
-	logger               *zap.Logger
-	Repository           Repository
-	processRepository    processes.Repository
-	submissionRepository submissions.Repository
-	problemRepository    problems.Repository
+	logger              *zap.Logger
+	repository          Repository
+	blueprintRepository blueprints.Repository
 
-	scheduler scheduler.Scheduler
+	dispatcher Dispatcher
 }
 
-func (s service) GetJudgementPrerequisites(processId uint64) (string, error) {
+func (s service) GetJudgementPrerequisites(blueprintId uint64) (string, error) {
 	return "upload:*.cpp,*.c,*.py,*.zip", nil
 }
 
@@ -43,7 +38,7 @@ func (s service) UpdateJudgement(judgementId string, status models.JudgeStatus, 
 	)
 
 	// get judgement with judgementId
-	judgement, err := s.Repository.GetJudgement(judgementId)
+	judgement, err := s.repository.GetJudgement(judgementId)
 	if err != nil {
 		return nil, err
 	}
@@ -52,19 +47,19 @@ func (s service) UpdateJudgement(judgementId string, status models.JudgeStatus, 
 	judgement.Status = status
 	judgement.Msg = msg
 
-	err = s.Repository.Update(judgement)
+	err = s.repository.Update(judgement)
 
 	return judgement, err
 }
 
-func (s service) CreateJudgement(accountId, processId, submissionId uint64) (int, *models.Judgement, error) {
+func (s service) CreateJudgement(accountId, blueprintId uint64, args map[string]interface{}) (int, *models.Judgement, error) {
 	s.logger.Debug("create judgement",
 		zap.Uint64("account id", accountId),
-		zap.Uint64("process id", processId),
-		zap.Uint64("submission id", submissionId),
+		zap.Uint64("blueprint id", blueprintId),
+		zap.Any("args", args),
 	)
 
-	//judgements, err := d.Repository.GetJudgementsByAccountId(accountId)
+	//judgements, err := d.repository.GetJudgementsByAccountId(accountId)
 	//if err != nil {
 	//	return http.StatusInternalServerError, nil, err
 	//}
@@ -83,140 +78,74 @@ func (s service) CreateJudgement(accountId, processId, submissionId uint64) (int
 	//	}
 	//}
 
-	// get process
-	process, err := s.processRepository.GetProcess(processId)
+	// get blueprint
+	blueprint, err := s.blueprintRepository.GetBlueprint(blueprintId)
 	if err != nil {
-		s.logger.Error("create judgement, get process",
-			zap.Uint64("process id", processId),
+		s.logger.Error("create judgement, get blueprint",
+			zap.Uint64("blueprint id", blueprintId),
 			zap.Error(err),
 		)
 		return http.StatusInternalServerError, nil, err
 	}
-	if process == nil {
+	if blueprint == nil {
 		return http.StatusInternalServerError, nil, errors.New("invalid request")
 	}
 	s.logger.Debug("create judgement",
-		zap.String("process definition", process.Definition),
+		zap.String("blueprint definition", blueprint.Definition),
 	)
 
-	// get submission
-	submission, err := s.submissionRepository.GetSubmissionById(submissionId)
-	if err != nil {
-		s.logger.Error("create judgement",
-			zap.Uint64("submission id", submissionId),
-			zap.Error(err),
-		)
-		return http.StatusInternalServerError, nil, err
+	if args == nil {
+		args = map[string]interface{}{}
 	}
-	if submission == nil {
-		return http.StatusBadRequest, nil, errors.New("invalid request")
-	}
-	s.logger.Debug("create judgement",
-		zap.String("submission user space", submission.UserVolume),
-	)
 
 	// create judgement
-	judgement, err := s.Repository.Create(submissionId, processId)
+	judgement, err := s.repository.Create(blueprintId, args)
 	if err != nil {
 		s.logger.Error("create judgement",
-			zap.Uint64("submission id", submissionId),
-			zap.Uint64("process id", processId),
+			zap.Uint64("blueprint id", blueprintId),
 			zap.Error(err),
 		)
 		return http.StatusInternalServerError, nil, err
 	}
 	s.logger.Debug("create judgement successfully")
 
-	problem, err := s.problemRepository.GetProblemById(submission.ProblemId)
-	if err != nil {
-		panic(err)
-	}
-	r, err := s.scheduler.NewRuntime(problem, submission, judgement, process)
-	if err != nil {
-		return http.StatusInternalServerError, nil, err
-	}
-	err = s.scheduler.PushRuntime(r)
-	if err != nil {
-		return http.StatusInternalServerError, nil, err
-	}
+	GetDispatcher().PushJudgement(judgement)
+
 	return http.StatusOK, judgement, err
 }
 
 func (s service) GetJudgement(judgementId string) (*models.Judgement, error) {
-	judgement, err := s.Repository.GetJudgement(judgementId)
+	judgement, err := s.repository.GetJudgement(judgementId)
 	return judgement, err
 }
 
 func (s service) GetJudgements(accountId uint64) ([]*models.Judgement, error) {
-	judgements, err := s.Repository.GetJudgementsByAccountId(accountId)
+	judgements, err := s.repository.GetJudgementsByAccountId(accountId)
 	return judgements, err
-}
-
-func (s *service) FinishJudgement() {
-	ch := s.scheduler.FinishedJudgement()
-	for {
-		judgement := <-ch
-		_, _ = s.UpdateJudgement(judgement.JudgementId, judgement.Status, judgement.Score, judgement.Msg)
-	}
 }
 
 func NewService(
 	logger *zap.Logger,
-	s scheduler.Scheduler,
-	Repository Repository,
-	ProblemRepository problems.Repository,
-	ProcessRepository processes.Repository,
-	SubmissionRepository submissions.Repository,
+	repository Repository,
+	repository2 blueprints.Repository,
+	dispatcher Dispatcher,
 ) Service {
-	pendingJudgements, err := Repository.GetPendingJudgements()
+	pendingJudgements, err := repository.GetPendingJudgements()
 	if err != nil {
 		panic(err)
 	}
 
 	for _, judgement := range pendingJudgements {
-		// get process
-		process, err := ProcessRepository.GetProcess(judgement.ProcessId)
-		if err != nil {
-			panic(err)
-		}
-		if process == nil {
-			continue
-		}
-		// get submission
-		submission, err := SubmissionRepository.GetSubmissionById(judgement.SubmissionId)
-		if err != nil {
-			panic(err)
-		}
-		if submission == nil {
-			continue
-		}
-		// get problem
-		problem, err := ProblemRepository.GetProblemById(submission.ProblemId)
-		if err != nil {
-			panic(err)
-		}
-		if problem == nil {
-			continue
-		}
-
-		logger.Debug("restore judgement",
-			zap.String("judgement id", judgement.JudgementId),
-			zap.String("submission user space", submission.UserVolume),
-		)
-		r, err := s.NewRuntime(problem, submission, judgement, process)
-		s.PushRuntime(r)
+		logger.Debug("restore judgement", zap.String("judgement id", judgement.JudgementId))
+		dispatcher.PushJudgement(judgement)
 	}
 
 	srv := &service{
-		logger:               logger.With(zap.String("type", "JudgementService")),
-		Repository:           Repository,
-		processRepository:    ProcessRepository,
-		submissionRepository: SubmissionRepository,
-		problemRepository:    ProblemRepository,
-
-		scheduler: s,
+		logger:              logger.With(zap.String("type", "Judgement Service")),
+		repository:          repository,
+		blueprintRepository: repository2,
+		dispatcher:          dispatcher,
 	}
-	go srv.FinishJudgement()
 
 	return srv
 }

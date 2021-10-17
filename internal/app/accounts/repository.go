@@ -130,7 +130,7 @@ func (s *DefaultRepository) GetAccountById(id uint64) (account *models.Account, 
 
 func NewRepository(logger *zap.Logger, db *gorm.DB) Repository {
 	return &DefaultRepository{
-		logger: logger.With(zap.String("type", "Account Repository")),
+		logger: logger.With(zap.String("type", "Account repository")),
 		db:     db,
 	}
 }

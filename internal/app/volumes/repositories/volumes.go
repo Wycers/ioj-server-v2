@@ -63,7 +63,7 @@ func (r repository) CreateVolume(baseVolume *models.Volume, accountId uint64, vo
 
 func NewRepository(logger *zap.Logger, db *gorm.DB) Repository {
 	return &repository{
-		logger: logger.With(zap.String("type", "Repository")),
+		logger: logger.With(zap.String("type", "repository")),
 		db:     db,
 	}
 }
