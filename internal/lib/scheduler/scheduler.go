@@ -6,14 +6,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/infinity-oj/server-v2/internal/lib/nodeengine/scene"
+	"github.com/infinity-oj/server-v2/internal/lib/engine/scene"
 
 	"github.com/infinity-oj/server-v2/internal/app/processes"
 
 	"github.com/google/uuid"
 	"github.com/google/wire"
 
-	"github.com/infinity-oj/server-v2/internal/lib/nodeengine"
+	"github.com/infinity-oj/server-v2/internal/lib/engine"
 
 	"go.uber.org/zap"
 
@@ -26,7 +26,7 @@ type Runtime struct {
 	Submission *models.Submission
 	Judgement  *models.Judgement
 
-	graph  *nodeengine.Graph
+	graph  *engine.Graph
 	result map[int]*models.Slot
 }
 
@@ -83,7 +83,7 @@ func (s *Scheduler) Execute() {
 
 			pendingCnt++
 			wg.Add(1)
-			go func(block *nodeengine.Block) {
+			go func(block *engine.Block) {
 				s.logger.Debug("process started", zap.String("process id", newProcess.ProcessId))
 				select {
 				case outputs := <-processes.GetManager().Push(block.Id, newProcess):
@@ -140,13 +140,13 @@ func New(logger *zap.Logger,
 		definition = strings.ReplaceAll(definition, "<publicVolume>", problem.PublicVolume)
 		definition = strings.ReplaceAll(definition, "<privateVolume>", problem.PrivateVolume)
 	}
-	//graph, err := nodeengine.NewGraphByDefinition(definition)
+	//graph, err := engine.NewGraphByDefinition(definition)
 	var bs []*scene.BlockDefinition
 	for _, p := range programs {
 		bs = append(bs, scene.NewBlockDefinition(p.Definition))
 	}
 	s := scene.NewScene(blueprint.Definition)
-	graph, err := nodeengine.NewGraphByScene(bs, s)
+	graph, err := engine.NewGraphByScene(bs, s)
 	if err != nil {
 		logger.Error("parse blueprint definition failed",
 			zap.Uint64("blueprint id", blueprintId),

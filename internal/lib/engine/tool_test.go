@@ -1,4 +1,4 @@
-package nodeengine
+package engine
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/infinity-oj/server-v2/internal/lib/nodeengine/scene"
+	"github.com/infinity-oj/server-v2/internal/lib/engine/scene"
 )
 
 func TestScene(t *testing.T) {

@@ -1,11 +1,11 @@
-package nodeengine
+package engine
 
 import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 
-	"github.com/infinity-oj/server-v2/internal/lib/nodeengine/scene"
+	"github.com/infinity-oj/server-v2/internal/lib/engine/scene"
 )
 
 type Node struct {
