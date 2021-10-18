@@ -82,7 +82,31 @@ func (m *manager) Push(blockId int, process *models.Process) <-chan *models.Slot
 		C:       make(chan *models.Slots, 1),
 	}
 
-	m.pendingProcesses <- element
+	fmt.Println("new element", element.Process)
+	m.logger.Debug("consume element",
+		zap.String("process id", element.Process.ProcessId),
+		zap.String("process type", element.Process.Type),
+	)
+	matched := false
+	for _, f := range []func(element *ProcessElement) (bool, error){File, String, Evaluate, ConstString} {
+		var err error
+		matched, err = f(element)
+		if err != nil {
+			m.logger.Error("consume", zap.Error(err))
+		}
+		if matched {
+			break
+		}
+	}
+	if matched {
+		err := m.Finish(element, &element.Process.Outputs)
+		if err != nil {
+			m.logger.Error("consume", zap.Error(err))
+		}
+	} else {
+		m.processes.PushBack(element)
+	}
+
 	return element.C
 }
 
@@ -168,65 +192,17 @@ func (m *manager) remove(element *ProcessElement) {
 	}
 }
 
-func (m *manager) consume() {
-	for {
-		select {
-		case element := <-m.pendingProcesses:
-
-			//if element.Process.Type == "basic/end" {
-			//	if score, ok := element.Process.Inputs[0].Value.(float64); !ok {
-			//		element.runtime.Judgement.Msg = "wrong score"
-			//		element.runtime.Judgement.Status = models.SystemError
-			//		element.runtime.Judgement.Score = 0
-			//	} else {
-			//		element.runtime.Judgement.Msg = ""
-			//		element.runtime.Judgement.Status = models.Accepted
-			//		element.runtime.Judgement.Score = score
-			//	}
-			//	m.FinishRuntime(element.runtime)
-			//	continue
-			//}
-
-			fmt.Println("new element", element.Process)
-			m.logger.Debug("consume element",
-				zap.String("process id", element.Process.ProcessId),
-				zap.String("process type", element.Process.Type),
-			)
-			matched := false
-			for _, f := range []func(element *ProcessElement) (bool, error){File, String, Evaluate, ConstString} {
-				var err error
-				matched, err = f(element)
-				if err != nil {
-					m.logger.Error("consume", zap.Error(err))
-				}
-				if matched {
-					break
-				}
-			}
-			if matched {
-				err := m.Finish(element, &element.Process.Outputs)
-				if err != nil {
-					m.logger.Error("consume", zap.Error(err))
-				}
-				continue
-			}
-
-			m.processes.PushBack(element)
-		}
-	}
-}
-
 var instance *manager
 var once *sync.Once
 
-func GetManager() *manager {
+func GetManager() ProcessManager {
 	if instance == nil {
 		panic("manage is nil")
 	}
 	return instance
 }
 
-func NewManager(logger *zap.Logger) *manager {
+func NewManager(logger *zap.Logger) ProcessManager {
 	once = &sync.Once{}
 	once.Do(func() {
 		instance = &manager{
@@ -235,7 +211,6 @@ func NewManager(logger *zap.Logger) *manager {
 			processes:        list.New(),
 			pendingProcesses: make(chan *ProcessElement, 128),
 		}
-		go instance.consume()
 	})
 	return instance
 }
