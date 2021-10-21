@@ -5,24 +5,26 @@ import "database/sql/driver"
 type JudgeStatus string
 
 const (
-	Pending JudgeStatus = "Pending"
+	Pending  JudgeStatus = "Pending"
+	Running  JudgeStatus = "Running"
+	Canceled JudgeStatus = "Canceled"
+	Finished JudgeStatus = "Finished"
 
 	PartiallyCorrect JudgeStatus = "PartiallyCorrect"
 	WrongAnswer      JudgeStatus = "WrongAnswer"
 	Accepted         JudgeStatus = "Accepted"
 
-	SystemError         JudgeStatus = "SystemError"
-	JudgementFailed     JudgeStatus = "JudgementFailed"
-	CompilationError    JudgeStatus = "CompilationError"
-	FileError           JudgeStatus = "FileError"
-	RuntimeError        JudgeStatus = "RuntimeError"
 	TimeLimitExceeded   JudgeStatus = "TimeLimitExceeded"
 	MemoryLimitExceeded JudgeStatus = "MemoryLimitExceeded"
 	OutputLimitExceeded JudgeStatus = "OutputLimitExceeded"
-	InvalidInteraction  JudgeStatus = "InvalidInteraction"
+	RuntimeError        JudgeStatus = "RuntimeError"
+	FileError           JudgeStatus = "FileError"
 
+	SystemError        JudgeStatus = "SystemError"
+	JudgementFailed    JudgeStatus = "JudgementFailed"
+	CompilationError   JudgeStatus = "CompilationError"
 	ConfigurationError JudgeStatus = "ConfigurationError"
-	Canceled           JudgeStatus = "Canceled"
+	InvalidInteraction JudgeStatus = "InvalidInteraction"
 )
 
 func (p *JudgeStatus) Scan(value interface{}) error {

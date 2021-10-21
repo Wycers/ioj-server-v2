@@ -2,13 +2,15 @@ package scheduler
 
 import (
 	"fmt"
+	"math"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/infinity-oj/server-v2/internal/lib/engine/scene"
+	"github.com/infinity-oj/server-v2/internal/lib/manager"
 
-	"github.com/infinity-oj/server-v2/internal/app/processes"
+	"github.com/infinity-oj/server-v2/internal/lib/engine/scene"
 
 	"github.com/google/uuid"
 	"github.com/google/wire"
@@ -30,19 +32,29 @@ type Runtime struct {
 	result map[int]*models.Slot
 }
 
+type JudgeResult struct {
+	Code    int
+	Score   float64
+	Message string
+}
+
 type Scheduler struct {
 	logger *zap.Logger
 	mutex  *sync.Mutex
 
 	Runtime *Runtime
 
-	C chan int
+	C chan JudgeResult
 }
 
 func (s *Scheduler) Execute() {
-	code := 0
+	result := JudgeResult{
+		Code:    0,
+		Score:   0,
+		Message: "",
+	}
 	defer func() {
-		s.C <- code
+		s.C <- result
 	}()
 	s.logger.Debug("scheduler: execution started")
 	trigger := make(chan int, 100)
@@ -61,7 +73,7 @@ func (s *Scheduler) Execute() {
 					inputs = append(inputs, data)
 				} else {
 					s.logger.Error("wrong process definition", zap.Int("link id", linkId))
-					code = -1
+					result.Score = -1
 					return
 				}
 			}
@@ -80,13 +92,34 @@ func (s *Scheduler) Execute() {
 				Inputs:      inputs,
 				Outputs:     models.Slots{},
 			}
+			if newProcess.Type == "result" {
+				v := newProcess.Inputs[0].Value
+				score := func() float64 {
+					switch i := v.(type) {
+					case float64:
+						return i
+					case float32:
+						return float64(i)
+					case int64:
+						return float64(i)
+					case int32:
+						return float64(i)
+					case string:
+						if s, err := strconv.ParseFloat(i, 64); err == nil {
+							return s
+						}
+					}
+					return math.NaN()
+				}()
+				result.Score = score
+			}
 
 			pendingCnt++
 			wg.Add(1)
 			go func(block *engine.Block) {
 				s.logger.Debug("process started", zap.String("process id", newProcess.ProcessId))
 				select {
-				case outputs := <-processes.GetManager().Push(block.Id, newProcess):
+				case outputs := <-manager.GetManager().Push(block.Id, newProcess):
 					s.logger.Debug("process finished normally", zap.String("process id", newProcess.ProcessId))
 
 					blockId := block.Id
@@ -100,6 +133,7 @@ func (s *Scheduler) Execute() {
 					}
 
 					for index, output := range *outputs {
+						fmt.Println(output)
 						links := s.Runtime.graph.FindLinkBySourcePort(blockId, index)
 						for _, link := range links {
 							s.Runtime.result[link.Id] = output
@@ -124,7 +158,7 @@ func (s *Scheduler) Execute() {
 	wg.Wait()
 }
 
-func (s *Scheduler) OnFinish() <-chan int {
+func (s *Scheduler) OnFinish() <-chan JudgeResult {
 	return s.C
 }
 
@@ -160,7 +194,7 @@ func New(logger *zap.Logger,
 			zap.String("judgement id", judgement.JudgementId),
 		),
 		mutex: &sync.Mutex{},
-		C:     make(chan int, 1),
+		C:     make(chan JudgeResult, 1),
 		Runtime: &Runtime{
 			Problem:    problem,
 			Submission: submission,

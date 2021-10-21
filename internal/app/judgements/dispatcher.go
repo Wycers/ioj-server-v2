@@ -3,18 +3,13 @@ package judgements
 import (
 	"sync"
 
-	"github.com/infinity-oj/server-v2/internal/app/programs"
-
-	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
-
-	"go.uber.org/zap"
-
 	"github.com/infinity-oj/server-v2/internal/app/blueprints"
-
 	"github.com/infinity-oj/server-v2/internal/app/problems"
+	"github.com/infinity-oj/server-v2/internal/app/programs"
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
-
+	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
 	"github.com/infinity-oj/server-v2/pkg/models"
+	"go.uber.org/zap"
 )
 
 type Dispatcher interface {
@@ -39,16 +34,36 @@ func (d *dispatcher) execute(s *scheduler.Scheduler) {
 	d.logger.Debug("execute runtime",
 		zap.String("judgement id", s.Runtime.Judgement.JudgementId),
 	)
+	judgement := s.Runtime.Judgement
+	judgement.Status = models.Running
+	if err := d.jr.Update(judgement); err != nil {
+		d.logger.Error("update judgement", zap.Error(err))
+	}
 	go s.Execute()
-	code := <-s.OnFinish()
+	result := <-s.OnFinish()
 	d.logger.Debug("finish runtime",
 		zap.String("judgement id", s.Runtime.Judgement.JudgementId),
-		zap.Int("return code", code),
+		zap.Int("return code", result.Code),
 	)
-	judgement := s.Runtime.Judgement
-	judgement.Status = models.Accepted
-	err := d.jr.Update(judgement)
-	if err != nil {
+	judgement.Msg = result.Message
+	switch result.Score {
+	case -1:
+		judgement.Status = models.Finished
+		judgement.Score = 0
+		break
+	case 0:
+		judgement.Status = models.WrongAnswer
+		judgement.Score = 0
+		break
+	case 100:
+		judgement.Status = models.Accepted
+		judgement.Score = 0
+		break
+	default:
+		judgement.Status = models.PartiallyCorrect
+		judgement.Score = result.Score
+	}
+	if err := d.jr.Update(judgement); err != nil {
 		d.logger.Error("update judgement", zap.Error(err))
 	}
 }

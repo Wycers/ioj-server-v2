@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	manager2 "github.com/infinity-oj/server-v2/internal/lib/manager"
+
 	"github.com/google/uuid"
 	"github.com/infinity-oj/server-v2/pkg/models"
 	"go.uber.org/zap"
@@ -19,7 +21,7 @@ type Service interface {
 type service struct {
 	logger *zap.Logger
 
-	manager ProcessManager
+	manager manager2.ProcessManager
 }
 
 func (d service) GetProcesses(processType string) (processes []*models.Process, err error) {
@@ -133,7 +135,7 @@ func (d service) ReserveProcess(processId string) (token string, locked bool, er
 	return token, true, nil
 }
 
-func NewService(logger *zap.Logger, manager ProcessManager) Service {
+func NewService(logger *zap.Logger, manager manager2.ProcessManager) Service {
 	return &service{
 		logger: logger.With(zap.String("type", "Process service")),
 

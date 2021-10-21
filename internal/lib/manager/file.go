@@ -1,4 +1,4 @@
-package processes
+package manager
 
 import (
 	"errors"
@@ -9,7 +9,7 @@ import (
 	"github.com/infinity-oj/server-v2/pkg/models"
 )
 
-func File(element *ProcessElement) (bool, error) {
+func FileHandler(element *ProcessElement) (bool, error) {
 	if element.Process.Type != "basic/file" {
 		return false, nil
 	}

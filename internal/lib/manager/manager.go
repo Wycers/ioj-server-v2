@@ -1,4 +1,4 @@
-package processes
+package manager
 
 import (
 	"container/list"
@@ -31,8 +31,6 @@ type manager struct {
 	logger    *zap.Logger
 	mutex     *sync.Mutex
 	processes *list.List
-
-	pendingProcesses chan *ProcessElement
 }
 
 func (m *manager) Reserve(element *ProcessElement) bool {
@@ -88,7 +86,7 @@ func (m *manager) Push(blockId int, process *models.Process) <-chan *models.Slot
 		zap.String("process type", element.Process.Type),
 	)
 	matched := false
-	for _, f := range []func(element *ProcessElement) (bool, error){File, String, Evaluate, ConstString} {
+	for _, f := range []Handler{ConstString, String} {
 		var err error
 		matched, err = f(element)
 		if err != nil {
@@ -107,6 +105,7 @@ func (m *manager) Push(blockId int, process *models.Process) <-chan *models.Slot
 		m.processes.PushBack(element)
 	}
 
+	//m.processes.PushBack(element)
 	return element.C
 }
 
@@ -206,10 +205,9 @@ func NewManager(logger *zap.Logger) ProcessManager {
 	once = &sync.Once{}
 	once.Do(func() {
 		instance = &manager{
-			logger:           logger,
-			mutex:            &sync.Mutex{},
-			processes:        list.New(),
-			pendingProcesses: make(chan *ProcessElement, 128),
+			logger:    logger,
+			mutex:     &sync.Mutex{},
+			processes: list.New(),
 		}
 	})
 	return instance

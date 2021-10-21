@@ -49,15 +49,14 @@ func (m repository) GetJudgementsByAccountId(accountId uint64) (judgements []*mo
 		return nil, err
 	}
 	for _, res := range result {
-
 		judgements = append(judgements, &models.Judgement{
 			Model: models.Model{
 				CreatedAt: res.Judgement.CreatedAt,
 			},
 			BlueprintId: res.BlueprintId,
 			JudgementId: res.JudgementId,
-			Status:      res.Status,
-			Score:       res.Score,
+			Status:      res.Judgement.Status,
+			Score:       res.Judgement.Score,
 		})
 
 	}

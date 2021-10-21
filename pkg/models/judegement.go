@@ -12,13 +12,13 @@ type Args map[string]interface{}
 
 type Judgement struct {
 	Model
-	JudgementId string
 
-	BlueprintId uint64
+	SubmissionId uint64
+	BlueprintId  uint64
+	JudgementId  string
+	Args         Args `gorm:"type:json"`
 
-	Args Args `gorm:"type:json"`
-
-	Status JudgeStatus `sql:"type:judge_status"`
+	Status JudgeStatus `sql:"type:judge_status" json:"status"`
 	Msg    string
 	Score  float64
 }

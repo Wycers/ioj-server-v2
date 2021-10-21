@@ -3,6 +3,7 @@ package processes
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
+	"github.com/infinity-oj/server-v2/internal/lib/manager"
 )
 
 type InitProcessGroupFn func(r *gin.RouterGroup)
@@ -17,5 +18,5 @@ func CreateInitControllersFn(jc Controller) InitProcessGroupFn {
 var ProviderSet = wire.NewSet(CreateInitControllersFn,
 	NewController,
 	NewService,
-	NewManager,
+	manager.NewManager,
 )
