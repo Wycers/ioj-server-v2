@@ -8,6 +8,9 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/accounts"
 	"github.com/infinity-oj/server-v2/internal/app/blueprints"
 	"github.com/infinity-oj/server-v2/internal/app/processes"
+	"github.com/infinity-oj/server-v2/internal/lib/buildins"
+	"github.com/infinity-oj/server-v2/internal/lib/handlers"
+	"github.com/infinity-oj/server-v2/internal/lib/manager"
 	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
 	"github.com/infinity-oj/server-v2/internal/pkg/websockets"
 
@@ -45,7 +48,11 @@ var providerSet = wire.NewSet(
 	volumes.ProviderSet,
 	processes.ProviderSet,
 
+	handlers.ProviderSet,
+	buildins.ProviderSet,
+
 	scheduler.ProviderSet,
+	manager.ProviderSet,
 )
 
 func CreateApp(cf string) (*server.Application, error) {

@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/wire"
+
 	"github.com/infinity-oj/server-v2/pkg/models"
 	"go.uber.org/zap"
 )
@@ -31,6 +33,8 @@ type manager struct {
 	logger    *zap.Logger
 	mutex     *sync.Mutex
 	processes *list.List
+
+	buildIns []Handler
 }
 
 func (m *manager) Reserve(element *ProcessElement) bool {
@@ -66,12 +70,16 @@ func (m *manager) List() {
 	fmt.Println("==== END ====")
 }
 
-func (m *manager) Push(blockId int, process *models.Process) <-chan *models.Slots {
+type Handler interface {
+	IsMatched(tp string) bool
+	Work(process *models.Process) error
+}
+
+func (m *manager) Push(blockId int, process *models.Process) (c <-chan *models.Slots) {
 	m.logger.Debug("push process in processes",
 		zap.String("process id", process.ProcessId),
 		zap.String("process type", process.Type),
 	)
-
 	element := &ProcessElement{
 		IsLocked: false,
 
@@ -79,34 +87,27 @@ func (m *manager) Push(blockId int, process *models.Process) <-chan *models.Slot
 		Process: process,
 		C:       make(chan *models.Slots, 1),
 	}
+	c = element.C
 
 	fmt.Println("new element", element.Process)
 	m.logger.Debug("consume element",
 		zap.String("process id", element.Process.ProcessId),
 		zap.String("process type", element.Process.Type),
 	)
-	matched := false
-	for _, f := range []Handler{ConstString, String} {
-		var err error
-		matched, err = f(element)
-		if err != nil {
-			m.logger.Error("consume", zap.Error(err))
-		}
-		if matched {
-			break
+	for _, b := range m.buildIns {
+		if b.IsMatched(process.Type) {
+			if err := b.Work(process); err != nil {
+				m.logger.Error("consume", zap.Error(err))
+			}
+			err := m.Finish(element, &element.Process.Outputs)
+			if err != nil {
+				m.logger.Error("consume", zap.Error(err))
+			}
+			return
 		}
 	}
-	if matched {
-		err := m.Finish(element, &element.Process.Outputs)
-		if err != nil {
-			m.logger.Error("consume", zap.Error(err))
-		}
-	} else {
-		m.processes.PushBack(element)
-	}
-
-	//m.processes.PushBack(element)
-	return element.C
+	m.processes.PushBack(element)
+	return
 }
 
 // Fetch returns process with specific process type.
@@ -196,19 +197,23 @@ var once *sync.Once
 
 func GetManager() ProcessManager {
 	if instance == nil {
-		panic("manage is nil")
+		panic("manager is nil")
 	}
 	return instance
 }
 
-func NewManager(logger *zap.Logger) ProcessManager {
+func NewManager(logger *zap.Logger, ins []Handler) ProcessManager {
 	once = &sync.Once{}
 	once.Do(func() {
 		instance = &manager{
 			logger:    logger,
 			mutex:     &sync.Mutex{},
 			processes: list.New(),
+
+			buildIns: ins,
 		}
 	})
 	return instance
 }
+
+var ProviderSet = wire.NewSet(NewManager)

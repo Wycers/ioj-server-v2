@@ -21,6 +21,8 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/volumes/repositories"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/services"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/storages"
+	"github.com/infinity-oj/server-v2/internal/lib/buildins"
+	"github.com/infinity-oj/server-v2/internal/lib/handlers"
 	"github.com/infinity-oj/server-v2/internal/lib/manager"
 	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
 	"github.com/infinity-oj/server-v2/internal/pkg/configs"
@@ -98,7 +100,13 @@ func CreateApp(cf string) (*server.Application, error) {
 	programsService := programs.NewService(logger, programsRepository)
 	programsController := programs.NewController(logger, programsService)
 	initProgramGroupFn := programs.CreateInitControllersFn(programsController)
-	processManager := manager.NewManager(logger)
+	rankList := handlers.NewRankList()
+	result := handlers.NewResult(judgementsRepository)
+	constString := handlers.NewConstString()
+	file := handlers.NewFileHandler()
+	evaluate := handlers.NewEvaluateHandler()
+	v := buildins.All(rankList, result, constString, file, evaluate)
+	processManager := manager.NewManager(logger, v)
 	processesService := processes.NewService(logger, processManager)
 	processesController := processes.NewController(logger, processesService)
 	initProcessGroupFn := processes.CreateInitControllersFn(processesController)
@@ -129,4 +137,4 @@ func CreateApp(cf string) (*server.Application, error) {
 
 // wire.go:
 
-var providerSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, http.ProviderSet, database.ProviderSet, jaeger.ProviderSet, files.ProviderSet, websockets.ProviderSet, server.ProviderSet, accounts.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, programs.ProviderSet, blueprints.ProviderSet, volumes.ProviderSet, processes.ProviderSet, scheduler.ProviderSet)
+var providerSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, http.ProviderSet, database.ProviderSet, jaeger.ProviderSet, files.ProviderSet, websockets.ProviderSet, server.ProviderSet, accounts.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, programs.ProviderSet, blueprints.ProviderSet, volumes.ProviderSet, processes.ProviderSet, handlers.ProviderSet, buildins.ProviderSet, scheduler.ProviderSet, manager.ProviderSet)
