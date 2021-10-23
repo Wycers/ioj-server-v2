@@ -90,13 +90,13 @@ func (d *dispatcher) run() {
 		instances.blueprint = blueprint
 		d.logger.Debug("get blueprint", zap.Any("blueprint", blueprint))
 
-		submissionId, ok := judgement.Args["submission"].(uint64)
+		submissionId, ok := judgement.Args["submission"].(float64)
 		if ok {
 			// get submission
-			submission, err := d.sr.GetSubmissionById(submissionId)
+			submission, err := d.sr.GetSubmissionById(uint64(submissionId))
 			if err != nil {
 				d.logger.Error("create judgement",
-					zap.Uint64("submission id", submissionId),
+					zap.Uint64("submission id", uint64(submissionId)),
 					zap.Error(err),
 				)
 				continue
