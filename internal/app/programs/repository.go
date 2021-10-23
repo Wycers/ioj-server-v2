@@ -1,9 +1,11 @@
 package programs
 
 import (
+	"errors"
+
 	"github.com/infinity-oj/server-v2/pkg/models"
-	"github.com/jinzhu/gorm"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type Repository interface {
@@ -27,7 +29,7 @@ func (m repository) GetPrograms() (programs []*models.Program, err error) {
 func (m repository) GetProgram(id uint64) (p *models.Program, err error) {
 	p = &models.Program{}
 	if err = m.db.First(p, id).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		} else {
 			m.logger.Error("Get program failed", zap.Uint64("id", id), zap.Error(err))

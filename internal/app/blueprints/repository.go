@@ -1,9 +1,11 @@
 package blueprints
 
 import (
+	"errors"
+
 	"github.com/infinity-oj/server-v2/pkg/models"
-	"github.com/jinzhu/gorm"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type Repository interface {
@@ -27,7 +29,7 @@ func (m repository) GetBlueprints() (blueprints []*models.Blueprint, err error) 
 func (m repository) GetBlueprint(id uint64) (p *models.Blueprint, err error) {
 	p = &models.Blueprint{}
 	if err = m.db.First(p, id).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		} else {
 			m.logger.Error("Get blueprint failed", zap.Uint64("id", id), zap.Error(err))

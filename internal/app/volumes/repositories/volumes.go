@@ -2,8 +2,8 @@ package repositories
 
 import (
 	"github.com/infinity-oj/server-v2/pkg/models"
-	"github.com/jinzhu/gorm"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type Repository interface {

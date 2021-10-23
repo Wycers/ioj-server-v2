@@ -2,9 +2,9 @@ package problems
 
 import (
 	"github.com/infinity-oj/server-v2/pkg/models"
-	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type Repository interface {
@@ -31,7 +31,7 @@ func (m DefaultRepository) GetPage(problemId uint64, locale string) (p *models.P
 	}
 	p = &models.Page{}
 	if err = m.db.Where(&models.Page{ProblemId: problemId, Locale: locale}).First(p).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		}
 		m.logger.Error("Query page failed", zap.Uint64("problem id", problemId), zap.Error(err))
@@ -43,7 +43,7 @@ func (m DefaultRepository) GetPage(problemId uint64, locale string) (p *models.P
 func (m DefaultRepository) GetProblemById(id uint64) (p *models.Problem, err error) {
 	p = &models.Problem{}
 	if err = m.db.First(p, id).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		} else {
 			m.logger.Error("Query problem failed", zap.Uint64("id", id), zap.Error(err))

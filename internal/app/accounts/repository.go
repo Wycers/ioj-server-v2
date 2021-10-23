@@ -2,9 +2,9 @@ package accounts
 
 import (
 	"github.com/infinity-oj/server-v2/pkg/models"
-	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type Repository interface {
@@ -92,7 +92,7 @@ func (s *DefaultRepository) UpdateCredential(u *models.Credential) (err error) {
 func (s *DefaultRepository) QueryCredential(username string) (credential *models.Credential, err error) {
 	credential = &models.Credential{}
 	if err = s.db.Where(&models.Credential{Username: username}).Last(credential).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		} else {
 			s.logger.Error("Query credential failed", zap.String("username", username), zap.Error(err))
@@ -105,7 +105,7 @@ func (s *DefaultRepository) QueryCredential(username string) (credential *models
 func (s *DefaultRepository) GetAccountByName(name string) (account *models.Account, err error) {
 	account = &models.Account{}
 	if err = s.db.Where(&models.Account{Name: name}).First(account).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		} else {
 			s.logger.Error("query account failed", zap.String("name", name), zap.Error(err))
@@ -118,11 +118,10 @@ func (s *DefaultRepository) GetAccountByName(name string) (account *models.Accou
 func (s *DefaultRepository) GetAccountById(id uint64) (account *models.Account, err error) {
 	account = &models.Account{}
 	if err = s.db.First(account, id).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
-		} else {
-			s.logger.Error("query account failed", zap.Uint64("id", id), zap.Error(err))
 		}
+		s.logger.Error("query account failed", zap.Uint64("id", id), zap.Error(err))
 		return nil, err
 	}
 	return

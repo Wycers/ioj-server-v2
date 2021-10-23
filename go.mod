@@ -17,7 +17,6 @@ require (
 	github.com/google/wire v0.5.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/jinzhu/copier v0.2.5
-	github.com/jinzhu/gorm v1.9.16
 	github.com/json-iterator/go v1.1.10
 	github.com/opentracing-contrib/go-gin v0.0.0-20201220185307-1dd2273433a4
 	github.com/opentracing/opentracing-go v1.2.0
@@ -32,4 +31,9 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 )
 
-require github.com/HdrHistogram/hdrhistogram-go v1.0.1 // indirect
+require (
+	github.com/HdrHistogram/hdrhistogram-go v1.0.1 // indirect
+	github.com/spf13/cast v1.3.0
+	gorm.io/driver/postgres v1.1.2
+	gorm.io/gorm v1.21.16
+)

@@ -3,11 +3,11 @@ package database
 import (
 	"github.com/google/wire"
 	"github.com/infinity-oj/server-v2/pkg/models"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 // Options is  configuration of database
@@ -31,7 +31,7 @@ func NewOptions(v *viper.Viper, logger *zap.Logger) (*Options, error) {
 // New 初始化数据库
 func New(o *Options) (*gorm.DB, error) {
 	var err error
-	db, err := gorm.Open("postgres", o.URL)
+	db, err := gorm.Open(postgres.Open(o.URL))
 	if err != nil {
 		return nil, errors.Wrap(err, "gorm open database connection error")
 	}

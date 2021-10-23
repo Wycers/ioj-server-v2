@@ -7,9 +7,9 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/infinity-oj/server-v2/pkg/models"
-	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type Repository interface {
@@ -41,7 +41,7 @@ func (m repository) GetSubmissionsByAccount(offset, limit int, accountId uint64)
 func (m repository) GetSubmissionById(id uint64) (*models.Submission, error) {
 	submission := &models.Submission{}
 	err := m.db.First(&submission, id).Error
-	if gorm.IsRecordNotFoundError(err) {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
 	if err != nil {
@@ -62,7 +62,7 @@ func (m repository) GetSubmissions(offset, limit int, problemId string) (res []*
 func (m repository) GetSubmission(submissionId string) (*models.Submission, error) {
 	submission := &models.Submission{}
 	err := m.db.Where("submission_id = ?", submissionId).First(&submission).Error
-	if gorm.IsRecordNotFoundError(err) {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}
 	if err != nil {

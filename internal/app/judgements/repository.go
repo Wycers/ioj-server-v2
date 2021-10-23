@@ -1,13 +1,14 @@
 package judgements
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
 	"github.com/google/uuid"
 	"github.com/infinity-oj/server-v2/pkg/models"
-	"github.com/jinzhu/gorm"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 type Repository interface {
@@ -67,7 +68,7 @@ func (m repository) GetJudgement(judgementId string) (*models.Judgement, error) 
 
 	judgement := &models.Judgement{}
 	if err := m.db.Where(&models.Judgement{JudgementId: judgementId}).First(judgement).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		} else {
 			m.logger.Error("query account failed", zap.String("judgement id", judgementId), zap.Error(err))
