@@ -3,6 +3,8 @@ package problems
 import (
 	"net/http"
 
+	"github.com/infinity-oj/server-v2/internal/app/ranklists"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/infinity-oj/server-v2/internal/pkg/sessions"
 
@@ -16,11 +18,54 @@ type Controller interface {
 	GetProblem(c *gin.Context)
 	GetPage(c *gin.Context)
 	UpdateProblem(c *gin.Context)
+	GetRankList(c *gin.Context)
+	GetRankLists(c *gin.Context)
 }
 
 type DefaultController struct {
-	logger  *zap.Logger
-	service Service
+	logger    *zap.Logger
+	service   Service
+	rlService ranklists.Service
+}
+
+func (pc *DefaultController) GetRankList(c *gin.Context) {
+	name := c.Param("name")
+	id := c.Param("id")
+
+	pc.logger.Debug("get ranklist",
+		zap.String("problem name", name),
+		zap.String("ranklist id", id),
+	)
+
+}
+func (pc *DefaultController) GetRankLists(c *gin.Context) {
+	name := c.Param("name")
+
+	pc.logger.Debug("get ranklist", zap.String("problem name", name))
+
+	p, err := pc.service.GetProblemByName(name)
+	if err != nil {
+		pc.logger.Error("get problem", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+
+	rankList, err := pc.rlService.GetRankListsByProblem(p)
+	if err != nil {
+		pc.logger.Error("get account", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"message": err.Error(),
+		})
+		return
+	}
+	if rankList == nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	c.JSON(http.StatusOK, rankList)
+
 }
 
 func (pc *DefaultController) GetPage(c *gin.Context) {
@@ -225,9 +270,10 @@ func (pc *DefaultController) UpdateProblem(c *gin.Context) {
 	c.JSON(http.StatusOK, problem)
 }
 
-func NewController(logger *zap.Logger, s Service) Controller {
+func NewController(logger *zap.Logger, s Service, rls ranklists.Service) Controller {
 	return &DefaultController{
-		logger:  logger,
-		service: s,
+		logger:    logger,
+		service:   s,
+		rlService: rls,
 	}
 }

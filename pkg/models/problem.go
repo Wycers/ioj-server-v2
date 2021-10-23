@@ -7,6 +7,8 @@ type Problem struct {
 	Title     string `json:"title"`
 	ProcessId uint64
 
-	PublicVolume  string `json:"publicVolume"`
-	PrivateVolume string `json:"privateVolume"`
+	PublicVolume  string `json:"public_volume"`
+	PrivateVolume string `json:"-"`
+
+	RankLists []RankList `json:"rank_lists"`
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/accounts"
 	"github.com/infinity-oj/server-v2/internal/app/blueprints"
 	"github.com/infinity-oj/server-v2/internal/app/processes"
+	"github.com/infinity-oj/server-v2/internal/app/ranklists"
 	"github.com/infinity-oj/server-v2/internal/lib/buildins"
 	"github.com/infinity-oj/server-v2/internal/lib/handlers"
 	"github.com/infinity-oj/server-v2/internal/lib/manager"
@@ -47,6 +48,7 @@ var providerSet = wire.NewSet(
 	blueprints.ProviderSet,
 	volumes.ProviderSet,
 	processes.ProviderSet,
+	ranklists.ProviderSet,
 
 	handlers.ProviderSet,
 	buildins.ProviderSet,

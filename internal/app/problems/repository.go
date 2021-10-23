@@ -71,8 +71,8 @@ func (m DefaultRepository) GetProblems(offset, limit int) (p []*models.Problem, 
 
 func (m DefaultRepository) GetProblemByName(name string) (p *models.Problem, err error) {
 	p = &models.Problem{}
-	if err = m.db.Where(&models.Problem{Name: name}).First(p).Error; err != nil {
-		if gorm.IsRecordNotFoundError(err) {
+	if err = m.db.Where(&models.Problem{Name: name}).Preload("RankLists").First(p).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		} else {
 			m.logger.Error("Query problem failed", zap.String("name", name), zap.Error(err))

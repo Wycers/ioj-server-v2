@@ -14,6 +14,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/problems"
 	"github.com/infinity-oj/server-v2/internal/app/processes"
 	"github.com/infinity-oj/server-v2/internal/app/programs"
+	"github.com/infinity-oj/server-v2/internal/app/ranklists"
 	"github.com/infinity-oj/server-v2/internal/app/server"
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
 	"github.com/infinity-oj/server-v2/internal/app/volumes"
@@ -82,7 +83,9 @@ func CreateApp(cf string) (*server.Application, error) {
 	submissionsController := submissions.NewController(logger, submissionsService)
 	initSubmissionGroupFn := submissions.CreateInitControllersFn(submissionsController)
 	problemsService := problems.NewService(logger, problemsRepository)
-	problemsController := problems.NewController(logger, problemsService)
+	ranklistsRepository := ranklists.NewRepository(logger, db)
+	ranklistsService := ranklists.NewService(logger, ranklistsRepository)
+	problemsController := problems.NewController(logger, problemsService, ranklistsService)
 	initProblemGroupFn := problems.CreateInitControllersFn(problemsController)
 	filesOptions, err := files.NewOptions(viper, logger)
 	if err != nil {
@@ -100,7 +103,7 @@ func CreateApp(cf string) (*server.Application, error) {
 	programsService := programs.NewService(logger, programsRepository)
 	programsController := programs.NewController(logger, programsService)
 	initProgramGroupFn := programs.CreateInitControllersFn(programsController)
-	rankList := handlers.NewRankList()
+	rankList := handlers.NewRankList(ranklistsRepository, repository)
 	result := handlers.NewResult(judgementsRepository)
 	constString := handlers.NewConstString()
 	file := handlers.NewFileHandler()
@@ -113,8 +116,10 @@ func CreateApp(cf string) (*server.Application, error) {
 	blueprintsService := blueprints.NewService(logger, blueprintsRepository)
 	blueprintsController := blueprints.NewController(logger, blueprintsService)
 	initBlueprintGroupFn := blueprints.CreateInitControllersFn(blueprintsController)
+	ranklistsController := ranklists.NewController(logger, ranklistsService)
+	initRanklistGroupFn := ranklists.CreateInitControllersFn(ranklistsController)
 	initWebsocketGroupFn := websockets.CreateInitWebSocketFn()
-	initControllers := server.CreateInitControllersFn(initAccountGroupFn, initJudgementGroupFn, initSubmissionGroupFn, initProblemGroupFn, initVolumeGroupFn, initProgramGroupFn, initProcessGroupFn, initBlueprintGroupFn, initWebsocketGroupFn)
+	initControllers := server.CreateInitControllersFn(initAccountGroupFn, initJudgementGroupFn, initSubmissionGroupFn, initProblemGroupFn, initVolumeGroupFn, initProgramGroupFn, initProcessGroupFn, initBlueprintGroupFn, initRanklistGroupFn, initWebsocketGroupFn)
 	configuration, err := jaeger.NewConfiguration(viper, logger)
 	if err != nil {
 		return nil, err
@@ -137,4 +142,4 @@ func CreateApp(cf string) (*server.Application, error) {
 
 // wire.go:
 
-var providerSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, http.ProviderSet, database.ProviderSet, jaeger.ProviderSet, files.ProviderSet, websockets.ProviderSet, server.ProviderSet, accounts.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, programs.ProviderSet, blueprints.ProviderSet, volumes.ProviderSet, processes.ProviderSet, handlers.ProviderSet, buildins.ProviderSet, scheduler.ProviderSet, manager.ProviderSet)
+var providerSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, http.ProviderSet, database.ProviderSet, jaeger.ProviderSet, files.ProviderSet, websockets.ProviderSet, server.ProviderSet, accounts.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, programs.ProviderSet, blueprints.ProviderSet, volumes.ProviderSet, processes.ProviderSet, ranklists.ProviderSet, handlers.ProviderSet, buildins.ProviderSet, scheduler.ProviderSet, manager.ProviderSet)

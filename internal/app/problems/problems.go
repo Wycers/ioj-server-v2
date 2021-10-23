@@ -12,7 +12,10 @@ func CreateInitControllersFn(pc Controller) InitProblemGroupFn {
 		r.GET("/problem", pc.GetProblems)
 		r.GET("/problem/:name", pc.GetProblem)
 		r.GET("/problem/:name/page", pc.GetPage)
+		r.GET("/problem/:name/ranklist", pc.GetRankLists)
+		r.GET("/problem/:name/ranklist/:id", pc.GetRankList)
 		r.POST("/problem", pc.CreateProblem)
+		//r.POST("/problem/:name/ranklist", pc.CreateProblem)
 		r.PUT("/problem/:name", pc.UpdateProblem)
 	}
 }
