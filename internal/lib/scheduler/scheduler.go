@@ -2,10 +2,9 @@ package scheduler
 
 import (
 	"fmt"
-	"math"
-	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/infinity-oj/server-v2/internal/lib/manager"
@@ -32,39 +31,27 @@ type Runtime struct {
 	result map[int]*models.Slot
 }
 
-type JudgeResult struct {
-	Code    int
-	Score   float64
-	Message string
-}
-
 type Scheduler struct {
 	logger *zap.Logger
 	mutex  *sync.Mutex
 
 	Runtime *Runtime
 
-	C chan JudgeResult
+	C chan int
 }
 
 func (s *Scheduler) Execute() {
-	result := JudgeResult{
-		Code:    0,
-		Score:   0,
-		Message: "",
-	}
+	code := 0
 	defer func() {
-		s.C <- result
+		s.C <- code
 	}()
 	s.logger.Debug("scheduler: execution started")
-	trigger := make(chan int, 100)
-	pendingCnt := 0
+
 	wg := new(sync.WaitGroup)
-
-	trigger <- 0
+	trigger := make(chan int32, 100)
+	var n int32 = 0
+	trigger <- atomic.AddInt32(&n, 1)
 	for _ = range trigger {
-		s.logger.Debug("scheduler", zap.Int("pending count", pendingCnt))
-
 		ids := s.Runtime.graph.Run()
 		for _, block := range ids {
 			var inputs models.Slots
@@ -73,51 +60,31 @@ func (s *Scheduler) Execute() {
 					inputs = append(inputs, data)
 				} else {
 					s.logger.Error("wrong process definition", zap.Int("link id", linkId))
-					result.Score = -1
+					code = -1
 					return
 				}
 			}
 
-			newProcess := &models.Process{
-				Model: models.Model{
-					ID:        0,
-					CreatedAt: time.Now(),
-					UpdatedAt: time.Now(),
-					DeletedAt: nil,
-				},
-				Type:        block.Type,
-				ProcessId:   uuid.New().String(),
-				JudgementId: s.Runtime.Judgement.JudgementId,
-				Properties:  block.Properties,
-				Inputs:      inputs,
-				Outputs:     models.Slots{},
-			}
-			if newProcess.Type == "result" {
-				v := newProcess.Inputs[0].Value
-				score := func() float64 {
-					switch i := v.(type) {
-					case float64:
-						return i
-					case float32:
-						return float64(i)
-					case int64:
-						return float64(i)
-					case int32:
-						return float64(i)
-					case string:
-						if s, err := strconv.ParseFloat(i, 64); err == nil {
-							return s
-						}
-					}
-					return math.NaN()
-				}()
-				result.Score = score
-			}
-
-			pendingCnt++
+			atomic.AddInt32(&n, 1)
 			wg.Add(1)
 			go func(block *engine.Block) {
+				newProcess := &models.Process{
+					Model: models.Model{
+						ID:        0,
+						CreatedAt: time.Now(),
+						UpdatedAt: time.Now(),
+						DeletedAt: nil,
+					},
+					Type:        block.Type,
+					ProcessId:   uuid.New().String(),
+					JudgementId: s.Runtime.Judgement.JudgementId,
+					Properties:  block.Properties,
+					Inputs:      inputs,
+					Outputs:     models.Slots{},
+				}
+
 				s.logger.Debug("process started", zap.String("process id", newProcess.ProcessId))
+
 				select {
 				case outputs := <-manager.GetManager().Push(block.Id, newProcess):
 					s.logger.Debug("process finished normally", zap.String("process id", newProcess.ProcessId))
@@ -133,32 +100,35 @@ func (s *Scheduler) Execute() {
 					}
 
 					for index, output := range *outputs {
-						fmt.Println(output)
 						links := s.Runtime.graph.FindLinkBySourcePort(blockId, index)
 						for _, link := range links {
 							s.Runtime.result[link.Id] = output
 						}
 					}
 					block.Done()
-					trigger <- pendingCnt
+					trigger <- atomic.AddInt32(&n, 1)
 				case <-time.After(time.Second * 5):
 					s.logger.Debug("process timeout after 5s", zap.String("process id", newProcess.ProcessId))
-					if pendingCnt == 1 {
-						s.logger.Debug("pending count is 0, closing")
-						close(trigger)
-					}
 				}
+
 				s.logger.Debug("process ended", zap.String("process id", newProcess.ProcessId))
-				pendingCnt--
+				if atomic.AddInt32(&n, -1) == 0 {
+					s.logger.Debug("pending count is 0, closing")
+					close(trigger)
+				}
 				wg.Done()
 			}(block)
+		}
+		if atomic.AddInt32(&n, -1) == 0 {
+			s.logger.Debug("pending count is 0, closing")
+			close(trigger)
 		}
 	}
 	s.logger.Debug("scheduler: execution ended")
 	wg.Wait()
 }
 
-func (s *Scheduler) OnFinish() <-chan JudgeResult {
+func (s *Scheduler) OnFinish() <-chan int {
 	return s.C
 }
 
@@ -194,7 +164,7 @@ func New(logger *zap.Logger,
 			zap.String("judgement id", judgement.JudgementId),
 		),
 		mutex: &sync.Mutex{},
-		C:     make(chan JudgeResult, 1),
+		C:     make(chan int, 1),
 		Runtime: &Runtime{
 			Problem:    problem,
 			Submission: submission,

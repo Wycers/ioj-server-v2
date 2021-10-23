@@ -40,28 +40,27 @@ func (d *dispatcher) execute(s *scheduler.Scheduler) {
 		d.logger.Error("update judgement", zap.Error(err))
 	}
 	go s.Execute()
-	result := <-s.OnFinish()
+	code := <-s.OnFinish()
 	d.logger.Debug("finish runtime",
 		zap.String("judgement id", s.Runtime.Judgement.JudgementId),
-		zap.Int("return code", result.Code),
+		zap.Int("return code", code),
 	)
-	judgement.Msg = result.Message
-	switch result.Score {
+	judgement, err := d.jr.GetJudgement(judgement.JudgementId)
+	if err != nil {
+		d.logger.Error("get judgement err", zap.Error(err))
+	}
+	switch judgement.Score {
 	case -1:
 		judgement.Status = models.Finished
-		judgement.Score = 0
 		break
 	case 0:
 		judgement.Status = models.WrongAnswer
-		judgement.Score = 0
 		break
 	case 100:
 		judgement.Status = models.Accepted
-		judgement.Score = 0
 		break
 	default:
 		judgement.Status = models.PartiallyCorrect
-		judgement.Score = result.Score
 	}
 	if err := d.jr.Update(judgement); err != nil {
 		d.logger.Error("update judgement", zap.Error(err))
