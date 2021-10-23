@@ -99,9 +99,8 @@ func (m *manager) Push(blockId int, process *models.Process) (c <-chan *models.S
 			if err := b.Work(process); err != nil {
 				m.logger.Error("consume", zap.Error(err))
 			}
-			err := m.Finish(element, &element.Process.Outputs)
-			if err != nil {
-				m.logger.Error("consume", zap.Error(err))
+			if err := m.Finish(element, &element.Process.Outputs); err != nil {
+				m.logger.Error("finish", zap.Error(err))
 			}
 			return
 		}
