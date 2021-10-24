@@ -41,19 +41,22 @@ func New(o *Options) (*gorm.DB, error) {
 	}
 
 	db.AutoMigrate(
-		//&models.Account{},
-		//&models.Credential{},
-		//&models.Problem{},
-		//&models.Page{},
-		//&models.Submission{},
-		//&models.Volume{},
+		&models.Account{},
+		&models.Credential{},
+		&models.Problem{},
+		&models.Page{},
+		&models.Submission{},
+		&models.Volume{},
 		//&models.Role{},
-		//&models.Program{},
-		//&models.Blueprint{},
+		&models.Program{},
+		&models.Blueprint{},
 		&models.Judgement{},
-		//&models.Process{},
+		&models.Process{},
 		//&models.Group{},
 		//&models.UserGroupCorrelation{},
+		&models.RankListRecord{},
+		&models.RankListModel{},
+		&models.RankList{},
 	)
 
 	return db, nil
