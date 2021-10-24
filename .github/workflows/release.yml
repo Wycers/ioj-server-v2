@@ -22,7 +22,7 @@ jobs:
           go-version: 1.16
       -
         name: Install wire
-        run: GO111MODULE=off go get github.com/google/wire/cmd/wire@v0.5.0
+        run: go get github.com/google/wire/cmd/wire@v0.5.0
       -
         name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
