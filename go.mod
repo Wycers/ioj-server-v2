@@ -15,7 +15,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.3
 	github.com/go-resty/resty/v2 v2.5.0
 	github.com/google/uuid v1.2.0
-	github.com/google/wire v0.5.0
+	github.com/google/wire v0.5.0 // indirect
 	github.com/gorilla/websocket v1.4.2
 	github.com/jinzhu/copier v0.2.5
 	github.com/json-iterator/go v1.1.10
