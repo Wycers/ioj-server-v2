@@ -61,7 +61,7 @@ func (m repository) GetSubmissions(offset, limit int, problemId string) (res []*
 
 func (m repository) GetSubmission(submissionId string) (*models.Submission, error) {
 	submission := &models.Submission{}
-	err := m.db.Where("submission_id = ?", submissionId).First(&submission).Error
+	err := m.db.Where("name = ?", submissionId).Preload("Judgements").First(&submission).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

@@ -13,9 +13,9 @@ type Args map[string]interface{}
 type Judgement struct {
 	Model
 
-	SubmissionId uint64
+	SubmissionID uint64
 	BlueprintId  uint64
-	JudgementId  string
+	Name         string
 	Args         Args `gorm:"type:json"`
 
 	Status JudgeStatus `sql:"type:judge_status" json:"status"`

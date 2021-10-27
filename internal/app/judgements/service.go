@@ -136,7 +136,7 @@ func NewService(
 	}
 
 	for _, judgement := range pendingJudgements {
-		logger.Debug("restore judgement", zap.String("judgement id", judgement.JudgementId))
+		logger.Debug("restore judgement", zap.String("judgement id", judgement.Name))
 		dispatcher.PushJudgement(judgement)
 	}
 

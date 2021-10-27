@@ -28,7 +28,7 @@ const (
 )
 
 func (p *JudgeStatus) Scan(value interface{}) error {
-	*p = JudgeStatus(value.([]byte))
+	*p = JudgeStatus(value.(string))
 	return nil
 }
 

@@ -139,10 +139,10 @@ func (d *controller) GetSubmission(c *gin.Context) {
 		return
 	}
 
-	if submission.SubmitterId != session.AccountId {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
+	//if submission.SubmitterId != session.AccountId {
+	//	c.AbortWithStatus(http.StatusUnauthorized)
+	//	return
+	//}
 
 	c.JSON(http.StatusOK, submission)
 }

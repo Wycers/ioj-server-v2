@@ -11,6 +11,7 @@ func CreateInitControllersFn(sc Controller) InitSubmissionGroupFn {
 	return func(r *gin.RouterGroup) {
 		r.GET("/submission", sc.GetSubmissions)
 		r.GET("/submission/:submissionId", sc.GetSubmission)
+		r.GET("/submission/:submissionId/judgement", sc.GetSubmission)
 		r.POST("/submission", sc.CreateSubmission)
 	}
 }

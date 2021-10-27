@@ -105,7 +105,7 @@ func (d *DefaultController) CreateJudgement(c *gin.Context) {
 
 	d.logger.Debug("create judgement",
 		zap.Uint64("blueprint id", request.BlueprintId),
-		//zap.Uint64("submission id", request.SubmissionId),
+		//zap.Uint64("submission id", request.SubmissionID),
 	)
 
 	code, judgement, err := d.service.CreateJudgement(session.AccountId, request.BlueprintId, request.Args)
@@ -117,7 +117,7 @@ func (d *DefaultController) CreateJudgement(c *gin.Context) {
 		return
 	}
 	d.logger.Debug("create judgement",
-		zap.String("new judgement id", judgement.JudgementId),
+		zap.String("new judgement id", judgement.Name),
 	)
 	c.JSON(http.StatusOK, judgement)
 }

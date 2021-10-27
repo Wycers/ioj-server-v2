@@ -10,4 +10,6 @@ type Submission struct {
 	ProblemId uint64 `json:"problemId"`
 
 	UserVolume string `json:"userVolume"`
+
+	Judgements []Judgement `json:"judgements"`
 }

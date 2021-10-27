@@ -77,7 +77,7 @@ func (s *Scheduler) Execute() {
 					},
 					Type:        block.Type,
 					ProcessId:   uuid.New().String(),
-					JudgementId: s.Runtime.Judgement.JudgementId,
+					JudgementId: s.Runtime.Judgement.Name,
 					Properties:  block.Properties,
 					Inputs:      inputs,
 					Outputs:     models.Slots{},
@@ -168,7 +168,7 @@ func New(logger *zap.Logger,
 
 	return &Scheduler{
 		logger: logger.With(zap.String("scope", "scheduler"),
-			zap.String("judgement id", judgement.JudgementId),
+			zap.String("judgement id", judgement.Name),
 		),
 		mutex: &sync.Mutex{},
 		C:     make(chan int, 1),

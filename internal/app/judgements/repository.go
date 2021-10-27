@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/spf13/cast"
+
 	"github.com/google/uuid"
 	"github.com/infinity-oj/server-v2/pkg/models"
 	"go.uber.org/zap"
@@ -55,7 +57,7 @@ func (m repository) GetJudgementsByAccountId(accountId uint64) (judgements []*mo
 				CreatedAt: res.Judgement.CreatedAt,
 			},
 			BlueprintId: res.BlueprintId,
-			JudgementId: res.JudgementId,
+			Name:        res.Judgement.Name,
 			Status:      res.Judgement.Status,
 			Score:       res.Judgement.Score,
 		})
@@ -67,7 +69,7 @@ func (m repository) GetJudgementsByAccountId(accountId uint64) (judgements []*mo
 func (m repository) GetJudgement(judgementId string) (*models.Judgement, error) {
 
 	judgement := &models.Judgement{}
-	if err := m.db.Where(&models.Judgement{JudgementId: judgementId}).First(judgement).Error; err != nil {
+	if err := m.db.Where(&models.Judgement{Name: judgementId}).First(judgement).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, nil
 		} else {
@@ -79,18 +81,23 @@ func (m repository) GetJudgement(judgementId string) (*models.Judgement, error) 
 }
 
 func (m repository) Create(blueprintId uint64, args map[string]interface{}) (*models.Judgement, error) {
-	judgementId := uuid.New().String()
+	submissionName := cast.ToString(args["submission"])
+	if submissionName == "" {
+		return nil, errors.New("submission is required")
+	}
+	submission := &models.Submission{}
+	if err := m.db.First(submission, "name = ?", submissionName).Error; err != nil {
+		return nil, err
+	}
 	judgement := &models.Judgement{
-		JudgementId: judgementId,
 		BlueprintId: blueprintId,
+		Name:        uuid.New().String(),
 		Args:        args,
 		Status:      models.Pending,
+		Msg:         "",
 		Score:       -1,
 	}
-
-	err := m.db.Save(&judgement).Error
-
-	if err != nil {
+	if err := m.db.Model(submission).Association("Judgements").Append(judgement); err != nil {
 		return nil, err
 	}
 	return judgement, nil

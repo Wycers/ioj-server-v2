@@ -32,7 +32,7 @@ func (d *dispatcher) PushJudgement(judgement *models.Judgement) {
 
 func (d *dispatcher) execute(s *scheduler.Scheduler) {
 	d.logger.Debug("execute runtime",
-		zap.String("judgement id", s.Runtime.Judgement.JudgementId),
+		zap.String("judgement id", s.Runtime.Judgement.Name),
 	)
 	judgement := s.Runtime.Judgement
 	judgement.Status = models.Running
@@ -42,10 +42,10 @@ func (d *dispatcher) execute(s *scheduler.Scheduler) {
 	go s.Execute()
 	code := <-s.OnFinish()
 	d.logger.Debug("finish runtime",
-		zap.String("judgement id", s.Runtime.Judgement.JudgementId),
+		zap.String("judgement id", s.Runtime.Judgement.Name),
 		zap.Int("return code", code),
 	)
-	judgement, err := d.jr.GetJudgement(judgement.JudgementId)
+	judgement, err := d.jr.GetJudgement(judgement.Name)
 	if err != nil {
 		d.logger.Error("get judgement err", zap.Error(err))
 	}
