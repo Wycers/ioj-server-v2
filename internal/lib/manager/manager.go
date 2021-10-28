@@ -6,29 +6,34 @@ import (
 	"sync"
 	"time"
 
+	"github.com/infinity-oj/server-v2/internal/lib/engine"
+
+	"github.com/google/uuid"
 	"github.com/google/wire"
 
 	"github.com/infinity-oj/server-v2/pkg/models"
 	"go.uber.org/zap"
 )
 
-type ProcessElement struct {
-	IsLocked bool
-	LockedAt time.Time
+type ProcessRuntime struct {
+	isLocked bool
+	lockedAt time.Time
+	c        chan *models.Slots
+	block    *engine.Block
 
-	BlockId int
-	Process *models.Process
-	C       chan *models.Slots
+	Judgement *models.Judgement
+	Process   *models.Process
 }
 
 type ProcessManager interface {
 	List()
-	Push(blockId int, process *models.Process) <-chan *models.Slots
-	Fetch(judgementId, processId, processType string, ignoreLock bool) *ProcessElement
-	Finish(element *ProcessElement, slots *models.Slots) error
-	FinishWithError(element *ProcessElement, message string) error
-	Reserve(element *ProcessElement) bool
+	Push(judgement *models.Judgement, block *engine.Block, inputs *models.Slots) <-chan *models.Slots
+	Fetch(judgementId, processId, processType string, ignoreLock bool) *ProcessRuntime
+	Finish(element *ProcessRuntime, slots *models.Slots) error
+	FinishWithError(element *ProcessRuntime, message string) error
+	Reserve(element *ProcessRuntime) bool
 }
+
 type manager struct {
 	logger    *zap.Logger
 	mutex     *sync.Mutex
@@ -37,14 +42,14 @@ type manager struct {
 	buildIns []Handler
 }
 
-func (m *manager) Reserve(element *ProcessElement) bool {
+func (m *manager) Reserve(element *ProcessRuntime) bool {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
-	if element.IsLocked {
+	if element.isLocked {
 		return false
 	}
-	element.IsLocked = true
+	element.isLocked = true
 	return true
 }
 
@@ -52,7 +57,7 @@ func (m *manager) List() {
 	fmt.Println("=== START ===")
 
 	for te := m.processes.Front(); te != nil; te = te.Next() {
-		element, ok := te.Value.(*ProcessElement)
+		element, ok := te.Value.(*ProcessRuntime)
 
 		if !ok {
 			fmt.Println(te.Value)
@@ -63,7 +68,7 @@ func (m *manager) List() {
 			element.Process.JudgementId,
 			element.Process.ProcessId,
 			element.Process.Type,
-			element.IsLocked,
+			element.isLocked,
 		)
 	}
 
@@ -72,57 +77,73 @@ func (m *manager) List() {
 
 type Handler interface {
 	IsMatched(tp string) bool
-	Work(process *models.Process) error
+	Work(runtime *ProcessRuntime) error
 }
 
-func (m *manager) Push(blockId int, process *models.Process) (c <-chan *models.Slots) {
+func (m *manager) Push(judgement *models.Judgement, block *engine.Block, inputs *models.Slots) (c <-chan *models.Slots) {
+	process := &models.Process{
+		Model: models.Model{
+			ID:        0,
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			DeletedAt: nil,
+		},
+		Type:        block.Type,
+		ProcessId:   uuid.New().String(),
+		JudgementId: judgement.Name,
+		Properties:  block.Properties,
+		Inputs:      *inputs,
+		Outputs:     models.Slots{},
+	}
+
 	m.logger.Debug("push process in processes",
 		zap.String("process id", process.ProcessId),
 		zap.String("process type", process.Type),
 	)
-	element := &ProcessElement{
-		IsLocked: false,
+	runtime := &ProcessRuntime{
+		isLocked: false,
+		c:        make(chan *models.Slots, 1),
+		block:    block,
 
-		BlockId: blockId,
-		Process: process,
-		C:       make(chan *models.Slots, 1),
+		Judgement: judgement,
+		Process:   process,
 	}
-	c = element.C
+	c = runtime.c
 
-	fmt.Println("new element", element.Process)
-	m.logger.Debug("consume element",
-		zap.String("process id", element.Process.ProcessId),
-		zap.String("process type", element.Process.Type),
+	fmt.Println("new runtime", runtime.Process)
+	m.logger.Debug("consume runtime",
+		zap.String("process id", runtime.Process.ProcessId),
+		zap.String("process type", runtime.Process.Type),
 	)
 	for _, b := range m.buildIns {
 		if b.IsMatched(process.Type) {
-			if err := b.Work(process); err != nil {
+			if err := b.Work(runtime); err != nil {
 				m.logger.Error("consume", zap.Error(err))
 			}
-			if err := m.Finish(element, &element.Process.Outputs); err != nil {
+			if err := m.Finish(runtime, &runtime.Process.Outputs); err != nil {
 				m.logger.Error("finish", zap.Error(err))
 			}
 			return
 		}
 	}
-	m.processes.PushBack(element)
+	m.processes.PushBack(runtime)
 	return
 }
 
 // Fetch returns process with specific process type.
-func (m *manager) Fetch(judgementId, processId, processType string, ignoreLock bool) *ProcessElement {
+func (m *manager) Fetch(judgementId, processId, processType string, ignoreLock bool) *ProcessRuntime {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
 	for te := m.processes.Front(); te != nil; te = te.Next() {
-		processElement, ok := te.Value.(*ProcessElement)
+		processElement, ok := te.Value.(*ProcessRuntime)
 
 		if !ok {
 			panic("internal error")
 		}
 
-		if processElement.IsLocked && time.Now().Sub(processElement.LockedAt) > 3*time.Second {
-			processElement.IsLocked = false
+		if processElement.isLocked && time.Now().Sub(processElement.lockedAt) > 3*time.Second {
+			processElement.isLocked = false
 		}
 
 		if judgementId != "*" && processElement.Process.JudgementId != judgementId {
@@ -137,7 +158,7 @@ func (m *manager) Fetch(judgementId, processId, processType string, ignoreLock b
 			continue
 		}
 
-		if processElement.IsLocked {
+		if processElement.isLocked {
 			if !ignoreLock {
 				continue
 			}
@@ -149,18 +170,17 @@ func (m *manager) Fetch(judgementId, processId, processType string, ignoreLock b
 	return nil
 }
 
-func (m *manager) Finish(element *ProcessElement, outputs *models.Slots) error {
+func (m *manager) Finish(element *ProcessRuntime, outputs *models.Slots) error {
 	m.logger.Debug("finish process ",
 		zap.String("process id", element.Process.ProcessId),
 		zap.String("process type", element.Process.Type),
 	)
-
 	m.remove(element)
-	element.C <- outputs
+	element.c <- outputs
 	return nil
 }
 
-func (m *manager) FinishWithError(element *ProcessElement, message string) error {
+func (m *manager) FinishWithError(element *ProcessRuntime, message string) error {
 	//element.runtime.Judgement.Msg = message
 	//element.runtime.Judgement.Status = models.SystemError
 	//element.runtime.Judgement.Score = 0
@@ -169,7 +189,7 @@ func (m *manager) FinishWithError(element *ProcessElement, message string) error
 	return nil
 }
 
-func (m *manager) remove(element *ProcessElement) {
+func (m *manager) remove(element *ProcessRuntime) {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -178,7 +198,7 @@ func (m *manager) remove(element *ProcessElement) {
 	)
 
 	for te := m.processes.Front(); te != nil; te = te.Next() {
-		je, ok := te.Value.(*ProcessElement)
+		je, ok := te.Value.(*ProcessRuntime)
 
 		if !ok {
 			continue

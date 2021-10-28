@@ -11,7 +11,6 @@ import (
 
 	"github.com/infinity-oj/server-v2/internal/lib/engine/scene"
 
-	"github.com/google/uuid"
 	"github.com/google/wire"
 
 	"github.com/infinity-oj/server-v2/internal/lib/engine"
@@ -68,28 +67,13 @@ func (s *Scheduler) Execute() {
 			atomic.AddInt32(&n, 1)
 			wg.Add(1)
 			go func(block *engine.Block) {
-				newProcess := &models.Process{
-					Model: models.Model{
-						ID:        0,
-						CreatedAt: time.Now(),
-						UpdatedAt: time.Now(),
-						DeletedAt: nil,
-					},
-					Type:        block.Type,
-					ProcessId:   uuid.New().String(),
-					JudgementId: s.Runtime.Judgement.Name,
-					Properties:  block.Properties,
-					Inputs:      inputs,
-					Outputs:     models.Slots{},
-				}
-
-				s.logger.Debug("process started", zap.String("process id", newProcess.ProcessId))
+				blockId := block.Id
+				s.logger.Debug("process started", zap.Int("block id", blockId))
 
 				select {
-				case outputs := <-manager.GetManager().Push(block.Id, newProcess):
-					s.logger.Debug("process finished normally", zap.String("process id", newProcess.ProcessId))
+				case outputs := <-manager.GetManager().Push(s.Runtime.Judgement, block, &inputs):
+					s.logger.Debug("process finished normally", zap.Int("block id", blockId))
 
-					blockId := block.Id
 					if len(block.Output) != len(*outputs) {
 						s.logger.Error(fmt.Sprintf("output slots mismatch, block %d expects %d but %d",
 							block.Id,
@@ -108,10 +92,10 @@ func (s *Scheduler) Execute() {
 					block.Done()
 					trigger <- atomic.AddInt32(&n, 1)
 				case <-time.After(time.Second * 5):
-					s.logger.Debug("process timeout after 5s", zap.String("process id", newProcess.ProcessId))
+					s.logger.Debug("process timeout after 5s", zap.Int("block id", blockId))
 				}
 
-				s.logger.Debug("process ended", zap.String("process id", newProcess.ProcessId))
+				s.logger.Debug("process ended", zap.Int("block id", blockId))
 				if atomic.AddInt32(&n, -1) == 0 {
 					s.logger.Debug("pending count is 0, closing")
 					close(trigger)

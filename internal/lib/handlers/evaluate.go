@@ -3,6 +3,8 @@ package handlers
 import (
 	"reflect"
 
+	"github.com/infinity-oj/server-v2/internal/lib/manager"
+
 	"github.com/PaesslerAG/gval"
 	"github.com/infinity-oj/server-v2/pkg/models"
 	"github.com/pkg/errors"
@@ -15,7 +17,8 @@ func (e *Evaluate) IsMatched(tp string) bool {
 	return tp == "basic/evaluate"
 }
 
-func (e *Evaluate) Work(process *models.Process) error {
+func (e *Evaluate) Work(pr *manager.ProcessRuntime) error {
+	process := pr.Process
 	exp, ok := process.Properties["exp"]
 	if !ok {
 		return errors.New("no expression")

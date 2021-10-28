@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"github.com/infinity-oj/server-v2/internal/app/accounts"
+	"github.com/infinity-oj/server-v2/internal/lib/manager"
 
 	"github.com/infinity-oj/server-v2/internal/app/ranklists"
-	"github.com/infinity-oj/server-v2/pkg/models"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 )
@@ -18,7 +18,8 @@ func (r RankList) IsMatched(tp string) bool {
 	return tp == "ranklist"
 }
 
-func (r RankList) Work(process *models.Process) error {
+func (r RankList) Work(pr *manager.ProcessRuntime) error {
+	process := pr.Process
 	iRankListID, ok := process.Properties["ranklistID"]
 	if !ok {
 		return errors.New("ranklist id is not found")
