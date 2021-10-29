@@ -74,6 +74,7 @@ func (pc *DefaultController) CreateBlueprint(c *gin.Context) {
 		})
 		return
 	}
+
 	problem, err := pc.service.CreateBlueprint(request.Definition)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, &gin.H{

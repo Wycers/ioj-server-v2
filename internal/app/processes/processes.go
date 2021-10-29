@@ -7,10 +7,10 @@ import (
 
 type InitProcessGroupFn func(r *gin.RouterGroup)
 
-func CreateInitControllersFn(jc Controller) InitProcessGroupFn {
+func CreateInitControllersFn(pc Controller) InitProcessGroupFn {
 	return func(r *gin.RouterGroup) {
 		processGroup := r.Group("/process")
-		processGroup.GET("/", jc.GetProcesses)
+		processGroup.GET("/", pc.GetProcesses)
 	}
 }
 

@@ -10,11 +10,14 @@ func All(
 	list *handlers.RankList,
 	result *handlers.Result,
 	constString *handlers.ConstString,
+	constInt *handlers.ConstInt,
 	file *handlers.File,
 	evaluate *handlers.Evaluate,
-	volume *handlers.Volume,
+	create *handlers.VolumeCreate,
+	read *handlers.VolumeRead,
+	save *handlers.VolumeSave,
 ) []manager.Handler {
-	return []manager.Handler{list, result, constString, file, evaluate, volume}
+	return []manager.Handler{list, result, constString, constInt, file, evaluate, create, read, save}
 }
 
 var ProviderSet = wire.NewSet(All)

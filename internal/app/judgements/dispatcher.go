@@ -3,6 +3,8 @@ package judgements
 import (
 	"sync"
 
+	"github.com/spf13/cast"
+
 	"github.com/infinity-oj/server-v2/internal/app/blueprints"
 	"github.com/infinity-oj/server-v2/internal/app/problems"
 	"github.com/infinity-oj/server-v2/internal/app/programs"
@@ -111,18 +113,21 @@ func (d *dispatcher) run() {
 		}
 		d.logger.Debug("get submission", zap.Any("submission", instances.submission))
 
-		problemId, ok := judgement.Args["problem"].(float64)
-		if ok {
-			// get problem
-			problem, err := d.pr.GetProblemById(uint64(problemId))
-			if err != nil {
-				panic(err)
-			}
-			if problem == nil {
-				d.logger.Debug("create judgement instances, problem is nil")
-			}
-			instances.problem = problem
+		problemId := uint64(0)
+		if instances.submission != nil {
+			problemId = instances.submission.ProblemId
+		} else {
+			problemId = cast.ToUint64(judgement.Args["problem"])
 		}
+		// get problem
+		problem, err := d.pr.GetProblemById(problemId)
+		if err != nil {
+			panic(err)
+		}
+		if problem == nil {
+			d.logger.Debug("create judgement instances, problem is nil", zap.Uint64("problem id", problemId))
+		}
+		instances.problem = problem
 		d.logger.Debug("get problem", zap.Any("problem", instances.problem))
 
 		d.logger.Debug("create judgement instances", zap.Any("instances", instances))

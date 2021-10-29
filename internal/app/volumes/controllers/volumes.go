@@ -3,6 +3,7 @@ package controllers
 import (
 	"io/ioutil"
 	"net/http"
+	"strings"
 
 	"github.com/go-playground/validator/v10"
 
@@ -15,19 +16,53 @@ import (
 
 type Controller interface {
 	CreateVolume(c *gin.Context)
-
 	CreateFile(c *gin.Context)
 	CreateDirectory(c *gin.Context)
 
+	DeleteFile(c *gin.Context)
+
 	GetVolume(c *gin.Context)
-
 	DownloadDirectory(c *gin.Context)
-	GetFile(c *gin.Context)
+	DownloadFile(c *gin.Context)
 }
-
 type DefaultController struct {
 	logger  *zap.Logger
 	service services.Service
+}
+
+func (d DefaultController) DownloadDirectory(c *gin.Context) {
+	request := struct {
+		Dirname string `form:"dirname"`
+	}{}
+
+	if err := c.ShouldBindQuery(&request); err != nil {
+		errs, ok := err.(validator.ValidationErrors)
+		if !ok {
+			c.JSON(http.StatusOK, gin.H{
+				"msg": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg": errs.Error(),
+		})
+		return
+	}
+
+	if request.Dirname == "" {
+		request.Dirname = "/"
+	}
+
+	volume := c.Param("name")
+
+	file, err := d.service.GetDirectory(volume, "/")
+	if err != nil {
+		d.logger.Error("Download directory", zap.Error(err))
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	c.File(file.Name())
 }
 
 func (d DefaultController) CreateFile(c *gin.Context) {
@@ -56,9 +91,51 @@ func (d DefaultController) CreateFile(c *gin.Context) {
 		return
 	}
 	fileData, _ := ioutil.ReadAll(file)
-	volume, err := d.service.CreateFile(volumeName, formFile.Filename, fileData)
+	volume, err := d.service.CreateFile(volumeName, "/", formFile.Filename, fileData)
 	if err != nil {
 		d.logger.Error("create file failed", zap.Error(err))
+		return
+	}
+
+	c.JSON(http.StatusOK, volume)
+}
+
+func (d DefaultController) DeleteFile(c *gin.Context) {
+	session := sessions.GetSession(c)
+	if session == nil {
+		d.logger.Debug("get principal failed")
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	request := struct {
+		Filename string `form:"filename" binding:"required,gt=0"`
+	}{}
+
+	if err := c.ShouldBindQuery(&request); err != nil {
+		errs, ok := err.(validator.ValidationErrors)
+		if !ok {
+			c.JSON(http.StatusOK, gin.H{
+				"msg": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg": errs.Error(),
+		})
+		return
+	}
+
+	d.logger.Debug("upload file",
+		zap.String("filename", request.Filename),
+	)
+
+	volumeName := c.Param("name")
+
+	volume, err := d.service.RemoveFile(volumeName, "/", request.Filename)
+	if err != nil {
+		d.logger.Error("remove file failed", zap.Error(err))
 		return
 	}
 
@@ -105,13 +182,15 @@ func (d DefaultController) CreateDirectory(c *gin.Context) {
 
 func (d DefaultController) CreateVolume(c *gin.Context) {
 	session := sessions.GetSession(c)
-	if session == nil {
-		d.logger.Debug("get principal failed")
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
+	createBy := uint64(0)
+	if session != nil {
+		//d.logger.Debug("get principal failed")
+		//c.AbortWithStatus(http.StatusUnauthorized)
+		//return
+		createBy = session.AccountId
 	}
 
-	volume, err := d.service.CreateVolume(session.AccountId)
+	volume, err := d.service.CreateVolume(createBy)
 	if err != nil {
 		d.logger.Error("create volume failed")
 		return
@@ -120,8 +199,40 @@ func (d DefaultController) CreateVolume(c *gin.Context) {
 	c.JSON(http.StatusOK, volume)
 }
 
-func (d DefaultController) GetFile(c *gin.Context) {
-	panic("implement me")
+func (d DefaultController) DownloadFile(c *gin.Context) {
+	request := struct {
+		Filename string `form:"filename" binding:"required,gt=0"`
+	}{}
+
+	if err := c.ShouldBindQuery(&request); err != nil {
+		errs, ok := err.(validator.ValidationErrors)
+		if !ok {
+			c.JSON(http.StatusOK, gin.H{
+				"msg": err.Error(),
+			})
+			return
+		}
+
+		c.JSON(http.StatusBadRequest, gin.H{
+			"msg": errs.Error(),
+		})
+		return
+	}
+	volume := c.Param("name")
+	filename := strings.ReplaceAll(request.Filename, "%2f", "/")
+	filename = strings.ReplaceAll(request.Filename, "%2F", "/")
+
+	file, err := d.service.GetFile(volume, filename)
+	if err != nil {
+		if err.Error() == "not found" {
+			c.AbortWithStatus(http.StatusNotFound)
+		} else {
+			d.logger.Error("Download File", zap.Error(err))
+			c.AbortWithStatus(http.StatusInternalServerError)
+		}
+		return
+	}
+	c.File(file.Name())
 }
 
 func (d DefaultController) GetVolume(c *gin.Context) {
@@ -141,38 +252,6 @@ func (d DefaultController) GetVolume(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, volume)
-}
-
-func (d DefaultController) DownloadDirectory(c *gin.Context) {
-
-	request := struct {
-		Dirname string `form:"dirname" binding:"required"`
-	}{}
-
-	if err := c.ShouldBindQuery(&request); err != nil {
-		errs, ok := err.(validator.ValidationErrors)
-		if !ok {
-			c.JSON(http.StatusOK, gin.H{
-				"msg": err.Error(),
-			})
-			return
-		}
-
-		c.JSON(http.StatusBadRequest, gin.H{
-			"msg": errs.Error(),
-		})
-		return
-	}
-
-	volume := c.Param("name")
-
-	file, err := d.service.DownloadDirectory(volume, request.Dirname)
-	if err != nil {
-		d.logger.Error("Download directory", zap.Error(err))
-		c.AbortWithStatus(http.StatusInternalServerError)
-		return
-	}
-	c.File(file.Name())
 }
 
 func New(logger *zap.Logger, s services.Service) Controller {

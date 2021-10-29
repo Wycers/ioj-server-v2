@@ -9,16 +9,16 @@ import (
 	VS "github.com/infinity-oj/server-v2/internal/app/volumes/services"
 )
 
-type Volume struct {
+type VolumeCreate struct {
 	jr judgements.Repository
 	vs VS.Service
 }
 
-func (r *Volume) IsMatched(tp string) bool {
+func (r *VolumeCreate) IsMatched(tp string) bool {
 	return tp == "volume"
 }
 
-func (r *Volume) Work(pr *manager.ProcessRuntime) error {
+func (r *VolumeCreate) Work(pr *manager.ProcessRuntime) error {
 	judgement := pr.Judgement
 	v := cast.ToString(judgement.Args["volume"])
 	if v == "" {
@@ -40,6 +40,6 @@ func (r *Volume) Work(pr *manager.ProcessRuntime) error {
 	return nil
 }
 
-func NewVolume(jr judgements.Repository, vs VS.Service) *Volume {
-	return &Volume{jr: jr, vs: vs}
+func NewVolumeCreate(jr judgements.Repository, vs VS.Service) *VolumeCreate {
+	return &VolumeCreate{jr: jr, vs: vs}
 }

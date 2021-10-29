@@ -16,13 +16,12 @@ func CreateInitControllersFn(vc controllers.Controller) InitVolumeGroupFn {
 		r.POST("/volume", vc.CreateVolume)
 
 		r.POST("/volume/:name/file", vc.CreateFile)
-		r.POST("/volume/:name/directory", vc.CreateDirectory)
+		r.DELETE("/volume/:name/file", vc.DeleteFile)
+		//r.POST("/volume/:name/directory", vc.CreateDirectory)
 
-		r.GET("/volume/:name/download", vc.DownloadDirectory)
-		//r.GET("/volume/:name/file/:filename", vc.GetFile)
-		//r.GET("/volume/:name/directory/:dirname", vc.GetVolume)
 		r.GET("/volume/:name", vc.GetVolume)
-
+		r.GET("/volume/:name/file", vc.DownloadFile)
+		r.GET("/volume/:name/directory", vc.DownloadDirectory)
 	}
 }
 

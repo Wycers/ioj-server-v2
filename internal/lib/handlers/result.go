@@ -15,6 +15,8 @@ func (r *Result) IsMatched(tp string) bool {
 }
 
 func (r *Result) Work(pr *manager.ProcessRuntime) error {
+	pr.Mutex.Lock()
+	defer pr.Mutex.Unlock()
 	v := pr.Process.Inputs[0].Value
 	score := cast.ToFloat64(v)
 	pr.Judgement.Score = score

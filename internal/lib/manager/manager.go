@@ -21,6 +21,7 @@ type ProcessRuntime struct {
 	c        chan *models.Slots
 	block    *engine.Block
 
+	Mutex     *sync.Mutex
 	Judgement *models.Judgement
 	Process   *models.Process
 }
@@ -105,6 +106,7 @@ func (m *manager) Push(judgement *models.Judgement, block *engine.Block, inputs 
 		c:        make(chan *models.Slots, 1),
 		block:    block,
 
+		Mutex:     &sync.Mutex{},
 		Judgement: judgement,
 		Process:   process,
 	}

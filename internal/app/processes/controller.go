@@ -25,6 +25,7 @@ type DefaultController struct {
 }
 
 func (d *DefaultController) GetProcesses(c *gin.Context) {
+	d.logger.Debug("get processes")
 	request := struct {
 		Type string `form:"type" binding:"required,gt=0"`
 	}{}
@@ -44,9 +45,7 @@ func (d *DefaultController) GetProcesses(c *gin.Context) {
 		return
 	}
 
-	d.logger.Debug("get processes",
-		zap.String("page", request.Type),
-	)
+	d.logger.Debug("get processes", zap.String("page", request.Type))
 
 	processes, err := d.service.GetProcesses(request.Type)
 	if err != nil {
@@ -56,6 +55,7 @@ func (d *DefaultController) GetProcesses(c *gin.Context) {
 		})
 		return
 	}
+
 	c.JSON(http.StatusOK, processes)
 }
 

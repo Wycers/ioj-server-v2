@@ -81,21 +81,22 @@ func (m repository) GetJudgement(judgementId string) (*models.Judgement, error) 
 }
 
 func (m repository) Create(blueprintId uint64, args map[string]interface{}) (*models.Judgement, error) {
-	submissionName := cast.ToString(args["submission"])
-	if submissionName == "" {
+	submissionId := cast.ToUint64(args["submission"])
+	if submissionId == 0 {
 		return nil, errors.New("submission is required")
 	}
 	submission := &models.Submission{}
-	if err := m.db.First(submission, "name = ?", submissionName).Error; err != nil {
+	if err := m.db.First(submission, "id = ?", submissionId).Error; err != nil {
 		return nil, err
 	}
 	judgement := &models.Judgement{
-		BlueprintId: blueprintId,
-		Name:        uuid.New().String(),
-		Args:        args,
-		Status:      models.Pending,
-		Msg:         "",
-		Score:       -1,
+		BlueprintId:  blueprintId,
+		Name:         uuid.New().String(),
+		SubmissionID: submissionId,
+		Args:         args,
+		Status:       models.Pending,
+		Msg:          "",
+		Score:        -1,
 	}
 	if err := m.db.Model(submission).Association("Judgements").Append(judgement); err != nil {
 		return nil, err

@@ -68,11 +68,11 @@ func (s *Scheduler) Execute() {
 			wg.Add(1)
 			go func(block *engine.Block) {
 				blockId := block.Id
-				s.logger.Debug("process started", zap.Int("block id", blockId))
+				s.logger.Debug("process started", zap.Int("block id", blockId), zap.Any("inputs", inputs))
 
 				select {
 				case outputs := <-manager.GetManager().Push(s.Runtime.Judgement, block, &inputs):
-					s.logger.Debug("process finished normally", zap.Int("block id", blockId))
+					s.logger.Debug("process finished normally", zap.Int("block id", blockId), zap.Any("outputs", outputs))
 
 					if len(block.Output) != len(*outputs) {
 						s.logger.Error(fmt.Sprintf("output slots mismatch, block %d expects %d but %d",
@@ -91,7 +91,7 @@ func (s *Scheduler) Execute() {
 					}
 					block.Done()
 					trigger <- atomic.AddInt32(&n, 1)
-				case <-time.After(time.Second * 5):
+				case <-time.After(time.Second * 1000):
 					s.logger.Debug("process timeout after 5s", zap.Int("block id", blockId))
 				}
 
@@ -125,13 +125,13 @@ func New(logger *zap.Logger,
 	definition := blueprint.Definition
 	// TODO: throw the mass
 	if submission != nil {
-		definition = strings.ReplaceAll(definition, "<userVolume>", submission.UserVolume)
+		definition = strings.ReplaceAll(definition, "${userVolume}", submission.UserVolume)
 		definition = strings.ReplaceAll(definition, "${account_id}", fmt.Sprintf("%d", submission.SubmitterId))
 
 	}
 	if problem != nil {
-		definition = strings.ReplaceAll(definition, "<publicVolume>", problem.PublicVolume)
-		definition = strings.ReplaceAll(definition, "<privateVolume>", problem.PrivateVolume)
+		definition = strings.ReplaceAll(definition, "${publicVolume}", problem.PublicVolume)
+		definition = strings.ReplaceAll(definition, "${privateVolume}", problem.PrivateVolume)
 		definition = strings.ReplaceAll(definition, "${problem_id}", problem.Name)
 	}
 	fmt.Println(definition)

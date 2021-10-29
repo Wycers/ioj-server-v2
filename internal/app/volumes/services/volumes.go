@@ -3,7 +3,10 @@ package services
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/infinity-oj/server-v2/internal/pkg/crypto"
 
@@ -17,16 +20,14 @@ import (
 type Service interface {
 	CreateVolume(createdBy uint64) (*models.Volume, error)
 
-	CreateFile(baseVolumeName, filename string, file []byte) (*models.Volume, error)
-	CreateDirectory(volumeName, dirname string) (*models.Volume, error)
+	CreateDirectory(baseVolumeName, dirname string) (*models.Volume, error)
+	CreateFile(baseVolumeName, dirname, filename string, file []byte) (*models.Volume, error)
+	RemoveFile(baseVolumeName, dirname, filename string) (*models.Volume, error)
+	CopyFile(ov, od, of, nv, nd, nf string) (*models.Volume, error)
 
 	GetVolume(volumeName string) (*models.Volume, error)
-
-	DownloadDirectory(volumeName, dirname string) (file *os.File, err error)
-	GetDirectory(volumeName, dirname string) (directories, files []string, err error)
-	GetFile(volumeName, dirname, filename string) ([]byte, error)
-
-	GetVolumeFileRecords(volume *models.Volume, filePath string) (*models.FileRecords, error)
+	GetDirectory(volumeName, dirname string) (file *os.File, err error)
+	GetFile(volumeName, filename string) (*os.File, error)
 }
 
 type DefaultService struct {
@@ -44,33 +45,38 @@ func (d DefaultService) GetVolume(volumeName string) (*models.Volume, error) {
 	if err != nil {
 		return nil, err
 	}
-	fileRecords := models.FileRecords{}
+
+	mp := make(map[string]*models.FileRecord)
 
 	for i, _ := range volumes {
 		cur := volumes[i]
-		for _, curRecord := range cur.FileRecords {
-			fmt.Println(curRecord)
+		for _, currentRecord := range cur.FileRecords {
+			fmt.Println(currentRecord)
 
-			tag := -1
-			for i, _ := range fileRecords {
-				if fileRecords[i].FilePath == curRecord.FilePath {
-					tag = i
-					break
+			filepath := currentRecord.FilePath
+			if _, ok := mp[filepath]; ok {
+				// has previous record
+				if currentRecord.Opt == "add" {
+					// add a file with same file path, cover previous.
+					mp[filepath] = currentRecord
 				}
-			}
-			if curRecord.Opt == "Add" {
-				if tag == -1 {
-					fileRecords = append(fileRecords, curRecord)
-				} else {
-					fileRecords[tag] = curRecord
+				if currentRecord.Opt == "del" {
+					// del a file with same file path, remove previous.
+					delete(mp, filepath)
 				}
 			} else {
-				if tag != -1 {
-					fileRecords = append(fileRecords[:tag], fileRecords[tag+1:]...)
+				// no previous record
+				if currentRecord.Opt == "add" {
+					// add
+					mp[filepath] = currentRecord
 				}
 			}
 		}
-		fmt.Println()
+	}
+
+	fileRecords := models.FileRecords{}
+	for _, v := range mp {
+		fileRecords = append(fileRecords, v)
 	}
 	volume.FileRecords = fileRecords
 
@@ -94,29 +100,6 @@ func (d DefaultService) GetVolumeChain(volume *models.Volume) ([]*models.Volume,
 	return res, nil
 }
 
-func (d DefaultService) GetVolumeFileRecords(volume *models.Volume, filePath string) (*models.FileRecords, error) {
-	//if volume.Base == 0 {
-	//	// have no previous volume
-	//	return volume.FileRecords, nil
-	//}
-	//if filePath != "" {
-	//	for _, record := range *volume.FileRecords {
-	//		if record.FilePath == filePath {
-	//			return *
-	//		}
-	//	}
-	//}
-	//baseVolume, err := d.repository.GetVolumeByID(volume.Base)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//_, err = d.GetVolumeFileRecords(baseVolume, filePath)
-	//if err != nil {
-	//	return nil, err
-	//}
-	return nil, nil
-}
-
 func (d DefaultService) CreateVolume(accountID uint64) (*models.Volume, error) {
 	volumeName := uuid.New().String()
 	volume, err := d.Repository.CreateVolume(nil, accountID, volumeName)
@@ -132,7 +115,36 @@ func (d DefaultService) CreateVolume(accountID uint64) (*models.Volume, error) {
 	return volume, nil
 }
 
-func (d DefaultService) CreateFile(baseVolumeName, filename string, file []byte) (*models.Volume, error) {
+func (d DefaultService) CopyFile(ov, od, of, nv, nd, nf string) (*models.Volume, error) {
+	oldVolume, err := d.GetVolume(ov)
+	if err != nil {
+		return nil, err
+	}
+	oldFilePath := filepath.Join(od, of)
+	for _, fileRecord := range oldVolume.FileRecords {
+		if fileRecord.FilePath == oldFilePath {
+			newVolume, err := d.Repository.GetVolume(nv)
+			if err != nil {
+				return nil, err
+			}
+			newVolume.FileRecords = append(newVolume.FileRecords,
+				&models.FileRecord{
+					Opt:        "add",
+					FileType:   "f",
+					FilePath:   filepath.Join("/", nd, nf),
+					VolumeName: fileRecord.VolumeName,
+					VolumePath: fileRecord.VolumePath,
+				})
+			if newVolume, err = d.Repository.UpdateVolume(newVolume); err != nil {
+				return nil, err
+			}
+			return newVolume, err
+		}
+	}
+	return nil, errors.New("failed")
+}
+
+func (d DefaultService) CreateFile(baseVolumeName, dirname, filename string, file []byte) (*models.Volume, error) {
 	baseVolume, err := d.Repository.GetVolume(baseVolumeName)
 	if err != nil {
 		return baseVolume, err
@@ -145,9 +157,9 @@ func (d DefaultService) CreateFile(baseVolumeName, filename string, file []byte)
 	volumePath := time.Now().Format("20060102150405") + crypto.Sha256Bytes(file)
 	volume.FileRecords = models.FileRecords{
 		&models.FileRecord{
-			Opt:        "Add",
+			Opt:        "add",
 			FileType:   "f",
-			FilePath:   filename,
+			FilePath:   filepath.Join("/", dirname, filename),
 			VolumeName: volume.Name,
 			VolumePath: volumePath,
 		},
@@ -156,6 +168,30 @@ func (d DefaultService) CreateFile(baseVolumeName, filename string, file []byte)
 		return nil, err
 	}
 	if err := d.Storage.CreateFile(volume.Name, volumePath, file); err != nil {
+		return nil, err
+	}
+	return volume, nil
+}
+
+func (d DefaultService) RemoveFile(baseVolumeName, dirname, filename string) (*models.Volume, error) {
+	baseVolume, err := d.Repository.GetVolume(baseVolumeName)
+	if err != nil {
+		return baseVolume, err
+	}
+	volume, err := d.CreateVolume(1)
+	if err != nil {
+		return nil, err
+	}
+	volume.Base = baseVolume.ID
+	volume.FileRecords = models.FileRecords{
+		&models.FileRecord{
+			Opt:        "del",
+			FileType:   "f",
+			FilePath:   filepath.Join("/", dirname, filename),
+			VolumeName: volume.Name,
+		},
+	}
+	if volume, err = d.Repository.UpdateVolume(volume); err != nil {
 		return nil, err
 	}
 	return volume, nil
@@ -176,7 +212,7 @@ func (d DefaultService) CreateDirectory(baseVolumeName, dirname string) (*models
 	}
 	volume.FileRecords = models.FileRecords{
 		&models.FileRecord{
-			Opt:      "Add",
+			Opt:      "add",
 			FilePath: dirname,
 			FileType: "d",
 		},
@@ -187,20 +223,20 @@ func (d DefaultService) CreateDirectory(baseVolumeName, dirname string) (*models
 	return volume, nil
 }
 
-func (d DefaultService) GetDirectory(volumeName, dirname string) (directories, files []string, err error) {
-	panic("implement me")
-}
-
-func (d DefaultService) GetFile(volumeName, dirname, filename string) ([]byte, error) {
-	panic("implement me")
-}
-
-func (d DefaultService) DownloadDirectory(volumeName, dirname string) (file *os.File, err error) {
+func (d DefaultService) GetFile(volumeName, filename string) (*os.File, error) {
 	volume, err := d.GetVolume(volumeName)
 	if err != nil {
 		return nil, err
 	}
-	return d.Storage.ArchiveVolume(volume)
+	return d.Storage.FetchFile(volume, filename)
+}
+
+func (d DefaultService) GetDirectory(volumeName, dirname string) (file *os.File, err error) {
+	volume, err := d.GetVolume(volumeName)
+	if err != nil {
+		return nil, err
+	}
+	return d.Storage.FetchDirectory(volume, dirname)
 }
 
 func NewVolumeService(logger *zap.Logger, Storage storages.Storage, Repository repositories.Repository) Service {
