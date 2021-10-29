@@ -15,7 +15,7 @@ type VolumeCreate struct {
 }
 
 func (r *VolumeCreate) IsMatched(tp string) bool {
-	return tp == "volume"
+	return tp == "volume_create"
 }
 
 func (r *VolumeCreate) Work(pr *manager.ProcessRuntime) error {

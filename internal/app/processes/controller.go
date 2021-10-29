@@ -5,10 +5,8 @@ import (
 
 	"github.com/infinity-oj/server-v2/pkg/models"
 
-	"github.com/go-playground/validator/v10"
-	"github.com/infinity-oj/server-v2/internal/pkg/sessions"
-
 	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator/v10"
 	"go.uber.org/zap"
 )
 
@@ -80,25 +78,24 @@ func (d *DefaultController) GetProcess(c *gin.Context) {
 }
 
 func (d *DefaultController) UpdateProcess(c *gin.Context) {
-	session := sessions.GetSession(c)
-	if session == nil {
-		d.logger.Debug("get principal failed")
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
+	//session := sessions.GetSession(c)
+	//if session == nil {
+	//	d.logger.Debug("get principal failed")
+	//	//c.AbortWithStatus(http.StatusUnauthorized)
+	//	//return
+	//}
 
 	processId := c.Param("processId")
 
 	d.logger.Debug("update process",
-		zap.Uint64("account id", session.AccountId),
+		//zap.Uint64("account id", session.AccountId),
 		zap.String("process id", processId),
 	)
 
 	request := struct {
-		Token   string `json:"token" binding:"required"`
-		Warning string `json:"warning" binding:""`
-		Error   string `json:"error" binding:""`
-
+		Token   string       `json:"token" binding:"required"`
+		Warning string       `json:"warning" binding:""`
+		Error   string       `json:"error" binding:""`
 		Outputs models.Slots `json:"outputs" binding:"required"`
 	}{}
 

@@ -58,7 +58,8 @@ func (d service) GetProcess(processId string) (process *models.Process, err erro
 }
 
 func (d service) UpdateProcess(processId, warning, error string, outputs *models.Slots) (process *models.Process, err error) {
-	processElement := d.manager.Fetch("*", processId, "*", true)
+	d.logger.Debug("update process", zap.String("process id", processId))
+	processElement := d.manager.Fetch("*", processId, "*", false)
 	if processElement == nil {
 		d.logger.Debug("invalid token: no such process",
 			zap.String("process id", processId),

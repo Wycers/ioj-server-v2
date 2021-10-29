@@ -69,8 +69,8 @@ func (d DefaultController) CreateFile(c *gin.Context) {
 	session := sessions.GetSession(c)
 	if session == nil {
 		d.logger.Debug("get principal failed")
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
+		//c.AbortWithStatus(http.StatusUnauthorized)
+		//return
 	}
 
 	// single formFile

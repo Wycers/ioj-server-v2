@@ -137,6 +137,8 @@ func (m *manager) Fetch(judgementId, processId, processType string, ignoreLock b
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
+	m.logger.Debug("working!", zap.String("process id", processId))
+
 	for te := m.processes.Front(); te != nil; te = te.Next() {
 		processElement, ok := te.Value.(*ProcessRuntime)
 
@@ -144,7 +146,7 @@ func (m *manager) Fetch(judgementId, processId, processType string, ignoreLock b
 			panic("internal error")
 		}
 
-		if processElement.isLocked && time.Now().Sub(processElement.lockedAt) > 3*time.Second {
+		if processElement.isLocked && time.Now().Sub(processElement.lockedAt) > 1000*time.Second {
 			processElement.isLocked = false
 		}
 

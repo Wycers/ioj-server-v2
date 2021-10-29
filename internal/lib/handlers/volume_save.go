@@ -25,15 +25,14 @@ func (r *VolumeSave) Work(pr *manager.ProcessRuntime) error {
 	defer pr.Mutex.Unlock()
 
 	judgement := pr.Judgement
-	v := cast.ToString(judgement.Args["volume"])
+	v := cast.ToString(pr.Process.Inputs[0].Value)
 	if v == "" {
 		return errors.New("missing volume")
 	}
 	judgement.Args["volume"] = v
 
 	process := pr.Process
-	vp := cast.ToString(process.Inputs[0])
-
+	vp := cast.ToString(process.Inputs[1].Value)
 	tmp := strings.Split(vp, "/")
 
 	filename := cast.ToString(process.Properties["filename"])

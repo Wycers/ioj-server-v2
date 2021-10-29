@@ -11,6 +11,8 @@ func CreateInitControllersFn(pc Controller) InitProcessGroupFn {
 	return func(r *gin.RouterGroup) {
 		processGroup := r.Group("/process")
 		processGroup.GET("/", pc.GetProcesses)
+		processGroup.POST("/:processId/reservation", pc.ReserveProcess)
+		processGroup.PUT("/:processId", pc.UpdateProcess)
 	}
 }
 
