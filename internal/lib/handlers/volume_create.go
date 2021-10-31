@@ -1,11 +1,11 @@
 package handlers
 
 import (
+	"github.com/infinity-oj/server-v2/internal/app/judgements"
 	"github.com/infinity-oj/server-v2/internal/lib/manager"
 	"github.com/infinity-oj/server-v2/pkg/models"
 	"github.com/spf13/cast"
 
-	"github.com/infinity-oj/server-v2/internal/app/judgements"
 	VS "github.com/infinity-oj/server-v2/internal/app/volumes/services"
 )
 
@@ -29,6 +29,9 @@ func (r *VolumeCreate) Work(pr *manager.ProcessRuntime) error {
 		v = volume.Name
 	}
 	judgement.Args["volume"] = v
+	if err := r.jr.Update(judgement); err != nil {
+		return err
+	}
 
 	process := pr.Process
 	process.Outputs = models.Slots{

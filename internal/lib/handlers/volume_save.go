@@ -1,13 +1,15 @@
 package handlers
 
 import (
+	"fmt"
 	"strings"
+
+	"github.com/infinity-oj/server-v2/internal/app/judgements"
 
 	"github.com/infinity-oj/server-v2/internal/lib/manager"
 	"github.com/pkg/errors"
 	"github.com/spf13/cast"
 
-	"github.com/infinity-oj/server-v2/internal/app/judgements"
 	VS "github.com/infinity-oj/server-v2/internal/app/volumes/services"
 )
 
@@ -38,6 +40,7 @@ func (r *VolumeSave) Work(pr *manager.ProcessRuntime) error {
 	filename := cast.ToString(process.Properties["filename"])
 
 	nv, err := r.vs.CopyFile(tmp[0], "/", tmp[1], v, "/", filename)
+	fmt.Println("volume save", filename, v)
 	if err != nil {
 		return err
 	}

@@ -17,6 +17,10 @@ type Service interface {
 	UpdateJudgement(judgementId string, status models.JudgeStatus, score float64, msg string) (*models.Judgement, error)
 }
 
+type Dispatcher interface {
+	PushJudgement(judgement *models.Judgement)
+}
+
 type service struct {
 	logger              *zap.Logger
 	repository          Repository
@@ -109,7 +113,7 @@ func (s service) CreateJudgement(accountId, blueprintId uint64, args map[string]
 	}
 	s.logger.Debug("create judgement successfully")
 
-	GetDispatcher().PushJudgement(judgement)
+	s.dispatcher.PushJudgement(judgement)
 
 	return http.StatusOK, judgement, err
 }

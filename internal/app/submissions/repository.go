@@ -30,7 +30,7 @@ type repository struct {
 }
 
 func (m repository) GetSubmissionsByAccount(offset, limit int, accountId uint64) (res []*models.Submission, err error) {
-	if err = m.db.Model(&models.Submission{}).Where("submitter_id = ?", accountId).
+	if err = m.db.Model(&models.Submission{}).Where("submitter_id = ?", accountId).Order("ID desc").
 		Preload("Judgements").Offset(offset).Limit(limit).
 		Find(&res).Error; err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (m repository) GetSubmissionById(id uint64) (*models.Submission, error) {
 
 func (m repository) GetSubmissions(offset, limit int, problemId string) (res []*models.Submission, err error) {
 	if err = m.db.Table("submissions").Where("problem_id = ?", problemId).
-		Offset(offset).Limit(limit).
+		Offset(offset).Limit(limit).Order("ID desc").
 		Find(&res).Error; err != nil {
 		return nil, err
 	}

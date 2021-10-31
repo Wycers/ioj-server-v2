@@ -21,5 +21,4 @@ var ProviderSet = wire.NewSet(CreateInitControllersFn,
 	NewController,
 	NewService,
 	NewRepository,
-	InitDispatcher,
 )

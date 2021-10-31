@@ -1,7 +1,11 @@
-package judgements
+package dispatcher
 
 import (
 	"sync"
+
+	"github.com/infinity-oj/server-v2/internal/app/judgements"
+
+	"github.com/google/wire"
 
 	"github.com/spf13/cast"
 
@@ -9,14 +13,12 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/problems"
 	"github.com/infinity-oj/server-v2/internal/app/programs"
 	"github.com/infinity-oj/server-v2/internal/app/submissions"
+
 	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
+
 	"github.com/infinity-oj/server-v2/pkg/models"
 	"go.uber.org/zap"
 )
-
-type Dispatcher interface {
-	PushJudgement(judgement *models.Judgement)
-}
 
 type dispatcher struct {
 	c      chan *models.Judgement
@@ -24,7 +26,7 @@ type dispatcher struct {
 	br     blueprints.Repository
 	pr     problems.Repository
 	sr     submissions.Repository
-	jr     Repository
+	jr     judgements.Repository
 	pgr    programs.Repository
 }
 
@@ -47,10 +49,7 @@ func (d *dispatcher) execute(s *scheduler.Scheduler) {
 		zap.String("judgement id", s.Runtime.Judgement.Name),
 		zap.Int("return code", code),
 	)
-	judgement, err := d.jr.GetJudgement(judgement.Name)
-	if err != nil {
-		d.logger.Error("get judgement err", zap.Error(err))
-	}
+	judgement = s.Runtime.Judgement
 	switch judgement.Score {
 	case -1:
 		judgement.Status = models.Finished
@@ -92,8 +91,7 @@ func (d *dispatcher) run() {
 		instances.blueprint = blueprint
 		d.logger.Debug("get blueprint", zap.Any("blueprint", blueprint))
 
-		submissionId, ok := judgement.Args["submission"].(float64)
-		if ok {
+		if submissionId := cast.ToUint64(judgement.Args["submission"]); submissionId != 0 {
 			// get submission
 			submission, err := d.sr.GetSubmissionById(uint64(submissionId))
 			if err != nil {
@@ -119,15 +117,17 @@ func (d *dispatcher) run() {
 		} else {
 			problemId = cast.ToUint64(judgement.Args["problem"])
 		}
-		// get problem
-		problem, err := d.pr.GetProblemById(problemId)
-		if err != nil {
-			panic(err)
+		if problemId != 0 {
+			// get problem
+			problem, err := d.pr.GetProblemById(problemId)
+			if err != nil {
+				panic(err)
+			}
+			if problem == nil {
+				d.logger.Debug("create judgement instances, problem is nil", zap.Uint64("problem id", problemId))
+			}
+			instances.problem = problem
 		}
-		if problem == nil {
-			d.logger.Debug("create judgement instances, problem is nil", zap.Uint64("problem id", problemId))
-		}
-		instances.problem = problem
 		d.logger.Debug("get problem", zap.Any("problem", instances.problem))
 
 		d.logger.Debug("create judgement instances", zap.Any("instances", instances))
@@ -152,15 +152,15 @@ func (d *dispatcher) run() {
 var instance *dispatcher
 var once sync.Once
 
-func GetDispatcher() Dispatcher {
+func GetDispatcher() judgements.Dispatcher {
 	if instance == nil {
 		panic("init failed")
 	}
 	return instance
 }
 
-func InitDispatcher(logger *zap.Logger, pr problems.Repository, sr submissions.Repository, jr Repository,
-	br blueprints.Repository, pgr programs.Repository) Dispatcher {
+func New(logger *zap.Logger, pr problems.Repository, sr submissions.Repository, jr judgements.Repository,
+	br blueprints.Repository, pgr programs.Repository) judgements.Dispatcher {
 	once.Do(func() {
 		instance = &dispatcher{
 			c:      make(chan *models.Judgement),
@@ -176,3 +176,5 @@ func InitDispatcher(logger *zap.Logger, pr problems.Repository, sr submissions.R
 	})
 	return instance
 }
+
+var ProviderSet = wire.NewSet(New)

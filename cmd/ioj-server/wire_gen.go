@@ -22,6 +22,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/volumes/services"
 	"github.com/infinity-oj/server-v2/internal/app/volumes/storages"
 	"github.com/infinity-oj/server-v2/internal/lib/buildins"
+	"github.com/infinity-oj/server-v2/internal/lib/dispatcher"
 	"github.com/infinity-oj/server-v2/internal/lib/handlers"
 	"github.com/infinity-oj/server-v2/internal/lib/manager"
 	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
@@ -74,11 +75,11 @@ func CreateApp(cf string) (*server.Application, error) {
 	problemsRepository := problems.NewRepository(logger, db)
 	submissionsRepository := submissions.NewRepository(logger, db)
 	programsRepository := programs.NewRepository(logger, db)
-	dispatcher := judgements.InitDispatcher(logger, problemsRepository, submissionsRepository, judgementsRepository, blueprintsRepository, programsRepository)
-	judgementsService := judgements.NewService(logger, judgementsRepository, blueprintsRepository, dispatcher)
+	judgementsDispatcher := dispatcher.New(logger, problemsRepository, submissionsRepository, judgementsRepository, blueprintsRepository, programsRepository)
+	judgementsService := judgements.NewService(logger, judgementsRepository, blueprintsRepository, judgementsDispatcher)
 	judgementsController := judgements.NewController(logger, judgementsService)
 	initJudgementGroupFn := judgements.CreateInitControllersFn(judgementsController)
-	submissionsService := submissions.NewService(logger, submissionsRepository, problemsRepository)
+	submissionsService := submissions.NewService(logger, submissionsRepository, problemsRepository, judgementsService)
 	submissionsController := submissions.NewController(logger, submissionsService)
 	initSubmissionGroupFn := submissions.CreateInitControllersFn(submissionsController)
 	problemsService := problems.NewService(logger, problemsRepository)
@@ -145,4 +146,4 @@ func CreateApp(cf string) (*server.Application, error) {
 
 // wire.go:
 
-var providerSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, http.ProviderSet, database.ProviderSet, jaeger.ProviderSet, files.ProviderSet, websockets.ProviderSet, server.ProviderSet, accounts.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, programs.ProviderSet, blueprints.ProviderSet, volumes.ProviderSet, processes.ProviderSet, ranklists.ProviderSet, handlers.ProviderSet, buildins.ProviderSet, scheduler.ProviderSet, manager.ProviderSet)
+var providerSet = wire.NewSet(log.ProviderSet, configs.ProviderSet, http.ProviderSet, database.ProviderSet, jaeger.ProviderSet, files.ProviderSet, websockets.ProviderSet, server.ProviderSet, accounts.ProviderSet, problems.ProviderSet, submissions.ProviderSet, judgements.ProviderSet, programs.ProviderSet, blueprints.ProviderSet, volumes.ProviderSet, processes.ProviderSet, ranklists.ProviderSet, handlers.ProviderSet, buildins.ProviderSet, scheduler.ProviderSet, dispatcher.ProviderSet, manager.ProviderSet)

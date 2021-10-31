@@ -10,6 +10,7 @@ import (
 	"github.com/infinity-oj/server-v2/internal/app/processes"
 	"github.com/infinity-oj/server-v2/internal/app/ranklists"
 	"github.com/infinity-oj/server-v2/internal/lib/buildins"
+	"github.com/infinity-oj/server-v2/internal/lib/dispatcher"
 	"github.com/infinity-oj/server-v2/internal/lib/handlers"
 	"github.com/infinity-oj/server-v2/internal/lib/manager"
 	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
@@ -54,6 +55,7 @@ var providerSet = wire.NewSet(
 	buildins.ProviderSet,
 
 	scheduler.ProviderSet,
+	dispatcher.ProviderSet,
 	manager.ProviderSet,
 )
 

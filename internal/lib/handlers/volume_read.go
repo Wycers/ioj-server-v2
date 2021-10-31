@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/infinity-oj/server-v2/internal/app/judgements"
+
 	"github.com/infinity-oj/server-v2/internal/lib/manager"
 	"github.com/infinity-oj/server-v2/pkg/models"
 	"github.com/spf13/cast"
 
-	"github.com/infinity-oj/server-v2/internal/app/judgements"
 	VS "github.com/infinity-oj/server-v2/internal/app/volumes/services"
 )
 

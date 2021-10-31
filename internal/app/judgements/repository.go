@@ -105,6 +105,7 @@ func (m repository) Create(blueprintId uint64, args map[string]interface{}) (*mo
 }
 
 func (m repository) Update(judgement *models.Judgement) error {
+
 	err := m.db.Save(&judgement).Error
 	return err
 }

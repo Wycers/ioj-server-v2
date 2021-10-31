@@ -4,13 +4,11 @@ import (
 	"errors"
 	"net/http"
 
-	"go.uber.org/zap"
-
-	//"github.com/infinity-oj/server-v2/internal/app/judgements"
+	"github.com/infinity-oj/server-v2/internal/app/judgements"
 	"github.com/infinity-oj/server-v2/internal/app/problems"
 	"github.com/infinity-oj/server-v2/internal/lib/scheduler"
-
 	"github.com/infinity-oj/server-v2/pkg/models"
+	"go.uber.org/zap"
 )
 
 type Service interface {
@@ -24,7 +22,8 @@ type service struct {
 	logger               *zap.Logger
 	SubmissionRepository Repository
 	ProblemRepository    problems.Repository
-	//JudgementService     judgements.Service
+
+	JudgementService judgements.Service
 
 	scheduler scheduler.Scheduler
 }
@@ -84,7 +83,9 @@ func (d service) Create(submitterID uint64, problemName, userSpace string) (code
 		return http.StatusInternalServerError, nil, nil, err
 	}
 	code = http.StatusOK
-	//code, j, err = d.JudgementService.CreateJudgement(submitterID, problem.ProgramId, s.ID)
+	code, j, err = d.JudgementService.CreateJudgement(submitterID, problem.BlueprintID, map[string]interface{}{
+		"submission": s.ID,
+	})
 	return
 }
 
@@ -93,11 +94,12 @@ func NewService(
 
 	repository Repository,
 	problemsRepository problems.Repository,
-	//judgementsService judgements.Service,
+	judgementsService judgements.Service,
 ) Service {
 	return &service{
 		logger:               logger.With(zap.String("type", "service")),
 		SubmissionRepository: repository,
 		ProblemRepository:    problemsRepository,
+		JudgementService:     judgementsService,
 	}
 }

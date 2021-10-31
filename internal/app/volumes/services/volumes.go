@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -34,6 +35,8 @@ type DefaultService struct {
 	logger     *zap.Logger
 	Repository repositories.Repository
 	Storage    storages.Storage
+
+	mutex *sync.Mutex
 }
 
 func (d DefaultService) GetVolume(volumeName string) (*models.Volume, error) {
@@ -116,6 +119,9 @@ func (d DefaultService) CreateVolume(accountID uint64) (*models.Volume, error) {
 }
 
 func (d DefaultService) CopyFile(ov, od, of, nv, nd, nf string) (*models.Volume, error) {
+	d.mutex.Lock()
+	defer d.mutex.Unlock()
+
 	oldVolume, err := d.GetVolume(ov)
 	if err != nil {
 		return nil, err
@@ -244,5 +250,7 @@ func NewVolumeService(logger *zap.Logger, Storage storages.Storage, Repository r
 		logger:     logger.With(zap.String("type", "Account Storage")),
 		Storage:    Storage,
 		Repository: Repository,
+
+		mutex: &sync.Mutex{},
 	}
 }
