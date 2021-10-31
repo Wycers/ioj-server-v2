@@ -3,6 +3,7 @@ module github.com/infinity-oj/server-v2
 go 1.16
 
 require (
+	github.com/HdrHistogram/hdrhistogram-go v1.0.1 // indirect
 	github.com/PaesslerAG/gval v1.1.0
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751
 	github.com/asaskevich/EventBus v0.0.0-20200907212545-49d423059eef
@@ -33,5 +34,3 @@ require (
 	gorm.io/driver/postgres v1.1.2
 	gorm.io/gorm v1.21.16
 )
-
-require github.com/HdrHistogram/hdrhistogram-go v1.0.1 // indirect
