@@ -23,7 +23,8 @@ Server for Infinity OJ
 1. Run postgres service.
    for the database:
 ``` postgresql
-create type judge_status as enum ('Pending', 'PartiallyCorrect', 'WrongAnswer', 'Accepted', 'SystemError', 'JudgementFailed', 'CompilationError', 'FileError', 'RuntimeError', 'TimeLimitExceeded', 'MemoryLimitExceeded', 'OutputLimitExceeded', 'InvalidInteraction', 'ConfigurationError', 'Canceled');
+create type judge_status as enum ('Pending', 'Canceled', 'Running', 'Finished', 'SystemError', 'JudgementFailed', 'CompilationError', 'FileError', 'RuntimeError', 'TimeLimitExceeded', 'MemoryLimitExceeded', 'OutputLimitExceeded', 'InvalidInteraction', 'ConfigurationError');
+create type submission_status as enum ('PartiallyCorrect', 'WrongAnswer', 'Accepted');
 ```
 ## Production
 ``` bash
