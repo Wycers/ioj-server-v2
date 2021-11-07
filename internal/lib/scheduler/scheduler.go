@@ -135,12 +135,12 @@ func New(logger *zap.Logger,
 		definition = strings.ReplaceAll(definition, "${problem_id}", problem.Name)
 	}
 	fmt.Println(definition)
+	s := scene.NewScene(definition)
 	//graph, err := engine.NewGraphByDefinition(definition)
 	var bs []*scene.BlockDefinition
 	for _, p := range programs {
 		bs = append(bs, scene.NewBlockDefinition(p.Definition))
 	}
-	s := scene.NewScene(definition)
 	graph, err := engine.NewGraphByScene(bs, s)
 	if err != nil {
 		logger.Error("parse blueprint definition failed",

@@ -44,8 +44,9 @@ func (m repository) CreateRankListModel(id uint64) (*models.RankListModel, error
 
 func (m repository) CreateRankListRecord(rl *models.RankList, account *models.Account, key string, value interface{}) (*models.RankListRecord, error) {
 	rlc := &models.RankListRecord{
-		Key:   key,
-		Value: cast.ToFloat64(value),
+		Account: *account,
+		Key:     key,
+		Value:   cast.ToFloat64(value),
 	}
 	if err := m.db.Create(rlc).Error; err != nil {
 		m.logger.Error("create ranklist record error",
