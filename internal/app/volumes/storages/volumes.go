@@ -57,7 +57,10 @@ func (m *FileManager) FetchFile(volume *models.Volume, fileName string) (*os.Fil
 		}
 		return tmpFile, nil
 	}
-	return nil, errors.New("not found")
+
+	err = errors.New("file not found")
+	m.logger.Error("fetch file", zap.String("filename", fileName), zap.Error(err))
+	return nil, err
 }
 
 func (m *FileManager) FetchDirectory(volume *models.Volume, directory string) (file *os.File, err error) {

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 
 	"github.com/infinity-oj/server-v2/internal/app/judgements"
@@ -36,7 +37,7 @@ func (r *VolumeFetch) Work(pr *manager.ProcessRuntime) error {
 	tmp := strings.Split(vp, "/")
 
 	volumeName := tmp[0]
-	fileName := tmp[1]
+	fileName := filepath.Join("/", tmp[1])
 
 	volume, err := r.vr.GetVolume(volumeName)
 	if err != nil {
