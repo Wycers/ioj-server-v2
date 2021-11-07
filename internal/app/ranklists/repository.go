@@ -44,11 +44,13 @@ func (m repository) CreateRankListModel(id uint64) (*models.RankListModel, error
 
 func (m repository) CreateRankListRecord(rl *models.RankList, account *models.Account, key string, value interface{}) (*models.RankListRecord, error) {
 	rlc := &models.RankListRecord{
-		Account: *account,
-		Key:     key,
-		Value:   cast.ToFloat64(value),
+		RankListID: rl.ID,
+		AccountID:  account.ID,
+		Account:    *account,
+		Key:        key,
+		Value:      cast.ToFloat64(value),
 	}
-	if err := m.db.Model(rl).Association("Records").Append(rlc); err != nil {
+	if err := m.db.Model(rlc).Create(rlc).Error; err != nil {
 		m.logger.Error("create ranklist record error",
 			zap.Any("ranklist", rl), zap.Any("record", rlc), zap.Error(err))
 		return nil, err
