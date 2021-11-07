@@ -26,12 +26,6 @@ func (r *VolumeFetch) IsMatched(tp string) bool {
 }
 
 func (r *VolumeFetch) Work(pr *manager.ProcessRuntime) error {
-	//judgement := pr.Judgement
-	//fmt.Println("==============>", pr.Process.Inputs[0].Value)
-	//f := cast.ToString(pr.Process.Inputs[0].Value)
-	//fmt.Println("==============>", f)
-	//fmt.Println(reflect.TypeOf(pr.Process.Inputs[0]))
-
 	process := pr.Process
 	vp := cast.ToString(process.Inputs[0].Value)
 	tmp := strings.Split(vp, "/")
@@ -57,7 +51,7 @@ func (r *VolumeFetch) Work(pr *manager.ProcessRuntime) error {
 	process.Outputs = models.Slots{
 		&models.Slot{
 			Type:  "bytes",
-			Value: bytes,
+			Value: string(bytes),
 		},
 	}
 	return nil
