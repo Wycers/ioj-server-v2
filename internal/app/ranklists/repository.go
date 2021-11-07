@@ -48,16 +48,6 @@ func (m repository) CreateRankListRecord(rl *models.RankList, account *models.Ac
 		Key:     key,
 		Value:   cast.ToFloat64(value),
 	}
-	if err := m.db.Create(rlc).Error; err != nil {
-		m.logger.Error("create ranklist record error",
-			zap.Any("ranklist", rl), zap.Any("record", rlc), zap.Error(err))
-		return nil, err
-	}
-	if err := m.db.Model(rlc).Association("Account").Append(account); err != nil {
-		m.logger.Error("create ranklist record error",
-			zap.Any("ranklist", rl), zap.Any("record", rlc), zap.Error(err))
-		return nil, err
-	}
 	if err := m.db.Model(rl).Association("Records").Append(rlc); err != nil {
 		m.logger.Error("create ranklist record error",
 			zap.Any("ranklist", rl), zap.Any("record", rlc), zap.Error(err))
