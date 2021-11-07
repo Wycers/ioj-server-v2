@@ -16,8 +16,9 @@ func All(
 	create *handlers.VolumeCreate,
 	read *handlers.VolumeRead,
 	save *handlers.VolumeSave,
+	fetch *handlers.VolumeFetch,
 ) []manager.Handler {
-	return []manager.Handler{list, result, constString, constInt, file, evaluate, create, read, save}
+	return []manager.Handler{list, result, constString, constInt, file, evaluate, create, read, save, fetch}
 }
 
 var ProviderSet = wire.NewSet(All)

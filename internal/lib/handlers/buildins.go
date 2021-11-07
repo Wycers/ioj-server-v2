@@ -7,4 +7,4 @@ import (
 var ProviderSet = wire.NewSet(NewResult,
 	NewRankList, NewEvaluateHandler, NewFileHandler,
 	NewConstString, NewConstInt,
-	NewVolumeCreate, NewVolumeSave, NewVolumeRead)
+	NewVolumeCreate, NewVolumeSave, NewVolumeRead, NewVolumeFetch)
