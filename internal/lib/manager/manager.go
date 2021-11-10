@@ -27,7 +27,6 @@ type ProcessRuntime struct {
 }
 
 type ProcessManager interface {
-	List()
 	Push(judgement *models.Judgement, block *engine.Block, inputs *models.Slots) <-chan *models.Slots
 	Fetch(judgementId, processId, processType string, ignoreLock bool) *ProcessRuntime
 	Finish(element *ProcessRuntime, slots *models.Slots) error

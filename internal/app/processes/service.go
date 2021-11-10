@@ -25,8 +25,6 @@ type service struct {
 }
 
 func (d service) GetProcesses(processType string) (processes []*models.Process, err error) {
-	d.manager.List()
-
 	d.logger.Info("get process", zap.String("type", processType))
 	element := d.manager.Fetch("*", "*", processType, false)
 	if element != nil {
