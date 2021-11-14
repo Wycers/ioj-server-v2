@@ -117,15 +117,16 @@ func (m *manager) Push(judgement *models.Judgement, block *engine.Block, inputs 
 		zap.String("process type", runtime.Process.Type),
 	)
 	for _, b := range m.buildIns {
-		if b.IsMatched(process.Type) {
-			if err := b.Work(runtime); err != nil {
-				m.logger.Error("consume", zap.Error(err))
-			}
-			if err := m.Finish(runtime, &runtime.Process.Outputs); err != nil {
-				m.logger.Error("finish", zap.Error(err))
-			}
-			return
+		if !b.IsMatched(process.Type) {
+			continue
 		}
+		if err := b.Work(runtime); err != nil {
+			m.logger.Error("consume", zap.Error(err))
+		}
+		if err := m.Finish(runtime, &runtime.Process.Outputs); err != nil {
+			m.logger.Error("finish", zap.Error(err))
+		}
+		return
 	}
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
