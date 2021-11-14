@@ -127,6 +127,8 @@ func (m *manager) Push(judgement *models.Judgement, block *engine.Block, inputs 
 			return
 		}
 	}
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 	m.processes.PushBack(runtime)
 	return
 }
