@@ -27,10 +27,12 @@ func (s service) GetRankList(id uint64) (*models.RankList, error) {
 	}
 	latestRecords := make(map[uint64]map[string]*models.RankListRecord)
 	for i := range rl.Records {
-		if latestRecords[rl.Records[i].AccountID] == nil {
-			latestRecords[rl.Records[i].AccountID] = make(map[string]*models.RankListRecord)
+		accountID := rl.Records[i].AccountID
+		key := rl.Records[i].Key
+		if latestRecords[accountID] == nil {
+			latestRecords[accountID] = make(map[string]*models.RankListRecord)
 		}
-		latestRecords[rl.Records[i].AccountID][rl.Records[i].Key] = &rl.Records[i]
+		latestRecords[accountID][key] = &rl.Records[i]
 	}
 	var records []models.RankListRecord
 	for _, tmp := range latestRecords {
