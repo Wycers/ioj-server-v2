@@ -134,7 +134,7 @@ func NewService(
 	repository2 blueprints.Repository,
 	dispatcher Dispatcher,
 ) Service {
-	pendingJudgements, err := repository.GetPendingJudgements()
+	pendingJudgements, err := repository.GetUnfinishedJudgements()
 	if err != nil {
 		panic(err)
 	}

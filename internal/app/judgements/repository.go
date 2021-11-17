@@ -16,7 +16,7 @@ import (
 type Repository interface {
 	GetJudgement(judgementId string) (*models.Judgement, error)
 	GetJudgementsByAccountId(accountId uint64) ([]*models.Judgement, error)
-	GetPendingJudgements() ([]*models.Judgement, error)
+	GetUnfinishedJudgements() ([]*models.Judgement, error)
 	Create(blueprintId uint64, args map[string]interface{}) (*models.Judgement, error)
 	Update(judgement *models.Judgement) error
 }
@@ -27,11 +27,11 @@ type repository struct {
 	mutex  *sync.Mutex
 }
 
-func (m repository) GetPendingJudgements() ([]*models.Judgement, error) {
+func (m repository) GetUnfinishedJudgements() ([]*models.Judgement, error) {
 	var res []*models.Judgement
 	if err := m.db.
 		Model(&models.Judgement{}).
-		Where("status = ?", models.Pending).Find(&res).Error; err != nil {
+		Where("status != ?", models.Finished).Find(&res).Error; err != nil {
 		return nil, err
 	}
 	return res, nil
