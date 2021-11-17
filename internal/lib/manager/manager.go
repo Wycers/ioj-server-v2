@@ -50,6 +50,7 @@ func (m *manager) Reserve(element *ProcessRuntime) bool {
 		return false
 	}
 	element.isLocked = true
+	element.lockedAt = time.Now()
 	return true
 }
 
@@ -164,10 +165,8 @@ func (m *manager) Fetch(judgementId, processId, processType string, ignoreLock b
 			continue
 		}
 
-		if processElement.isLocked {
-			if !ignoreLock {
-				continue
-			}
+		if processElement.isLocked && ignoreLock == false {
+			continue
 		}
 
 		return processElement
