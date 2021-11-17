@@ -46,6 +46,8 @@ func (s *Scheduler) Execute() {
 	}()
 	s.logger.Debug("scheduler: execution started")
 
+	lock := &sync.RWMutex{}
+
 	wg := new(sync.WaitGroup)
 	trigger := make(chan int32, 100)
 	var n int32 = 0
@@ -54,6 +56,7 @@ func (s *Scheduler) Execute() {
 		ids := s.Runtime.graph.Run()
 		for _, block := range ids {
 			var inputs models.Slots
+			lock.RLock()
 			for _, linkId := range block.Inputs {
 				if data, ok := s.Runtime.result[linkId]; ok {
 					inputs = append(inputs, data)
@@ -63,6 +66,7 @@ func (s *Scheduler) Execute() {
 					return
 				}
 			}
+			lock.RUnlock()
 
 			atomic.AddInt32(&n, 1)
 			wg.Add(1)
@@ -83,16 +87,19 @@ func (s *Scheduler) Execute() {
 						return
 					}
 
+					lock.Lock()
 					for index, output := range *outputs {
 						links := s.Runtime.graph.FindLinkBySourcePort(blockId, index)
 						for _, link := range links {
 							s.Runtime.result[link.Id] = output
 						}
 					}
+					lock.Unlock()
 					block.Done()
 					trigger <- atomic.AddInt32(&n, 1)
-				case <-time.After(time.Second * 1000):
-					s.logger.Debug("process timeout after 5s", zap.Int("block id", blockId))
+				case <-time.After(time.Second * 500):
+					s.logger.Debug("process timeout after 500s", zap.Int("block id", blockId))
+					// 其实这个时候应该是把评测挂起比较好
 				}
 
 				s.logger.Debug("process ended", zap.Int("block id", blockId))
