@@ -71,7 +71,7 @@ func (s *Scheduler) Execute() {
 				s.logger.Debug("process started", zap.Int("block id", blockId), zap.Any("inputs", inputs))
 
 				select {
-				case outputs := <-manager.GetManager().Push(s.Runtime.Judgement, block, &inputs):
+				case outputs := <-manager.Push(s.Runtime.Judgement, block, &inputs):
 					s.logger.Debug("process finished normally", zap.Int("block id", blockId), zap.Any("outputs", outputs))
 
 					if len(block.Output) != len(*outputs) {
@@ -127,14 +127,12 @@ func New(logger *zap.Logger,
 	if submission != nil {
 		definition = strings.ReplaceAll(definition, "${userVolume}", submission.UserVolume)
 		definition = strings.ReplaceAll(definition, "${account_id}", fmt.Sprintf("%d", submission.SubmitterId))
-
 	}
 	if problem != nil {
 		definition = strings.ReplaceAll(definition, "${publicVolume}", problem.PublicVolume)
 		definition = strings.ReplaceAll(definition, "${privateVolume}", problem.PrivateVolume)
 		definition = strings.ReplaceAll(definition, "${problem_id}", problem.Name)
 	}
-	fmt.Println(definition)
 	s := scene.NewScene(definition)
 	//graph, err := engine.NewGraphByDefinition(definition)
 	var bs []*scene.BlockDefinition

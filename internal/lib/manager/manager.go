@@ -218,17 +218,16 @@ func (m *manager) remove(element *ProcessRuntime) {
 }
 
 var instance *manager
-var once *sync.Once
+var once sync.Once
 
-func GetManager() ProcessManager {
-	if instance == nil {
-		panic("manager is nil")
+func Push(judgement *models.Judgement, block *engine.Block, inputs *models.Slots) <-chan *models.Slots {
+	for ok := instance == nil; ok; ok = instance == nil {
+		<-time.After(time.Second)
 	}
-	return instance
+	return instance.Push(judgement, block, inputs)
 }
 
 func NewManager(logger *zap.Logger, ins []Handler) ProcessManager {
-	once = &sync.Once{}
 	once.Do(func() {
 		instance = &manager{
 			logger:    logger,
