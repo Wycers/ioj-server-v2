@@ -5,7 +5,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
 
 	"github.com/infinity-oj/server-v2/internal/lib/manager"
 
@@ -94,12 +93,15 @@ func (s *Scheduler) Execute() {
 							s.Runtime.result[link.Id] = output
 						}
 					}
+
 					lock.Unlock()
 					block.Done()
 					trigger <- atomic.AddInt32(&n, 1)
-				case <-time.After(time.Second * 500):
-					s.logger.Debug("process timeout after 500s", zap.Int("block id", blockId))
-					// 其实这个时候应该是把评测挂起比较好
+
+					//case <-time.After(time.Second * 500):
+					//	s.logger.Debug("process timeout after 500s", zap.Int("block id", blockId))
+					//	// 其实这个时候应该是把评测挂起比较好
+					// 其实不应该在这里处理超时。
 				}
 
 				s.logger.Debug("process ended", zap.Int("block id", blockId))
